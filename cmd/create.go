@@ -894,7 +894,7 @@ func setupPortForward(namespace string) error {
 kill $(lsof -t -i:8000) 2>/dev/null || true
 sleep 1
 # Inicia o port-forward
-nohup kubectl port-forward -n NAMESPACE svc/girus-frontend 8000:80 --address 0.0.0.0 > /dev/null 2>&1 &
+nohup kubectl port-forward -n NAMESPACE svc/girus-frontend 8000:80 --address 192.168.4.69> /dev/null 2>&1 &
 echo $!  # Retorna o PID
 `
 	
@@ -918,7 +918,7 @@ echo $!  # Retorna o PID
 		
 		// Verificar conectividade
 		for i := 0; i < 5; i++ {
-			checkCmd := exec.Command("curl", "-s", "--max-time", "2", "-o", "/dev/null", "-w", "%{http_code}", "http://localhost:8000")
+			checkCmd := exec.Command("curl", "-s", "--max-time", "2", "-o", "/dev/null", "-w", "%{http_code}", "http://192.168.4.69:8000")
 			var out bytes.Buffer
 			checkCmd.Stdout = &out
 			
@@ -940,7 +940,7 @@ echo $!  # Retorna o PID
 		fmt.Println("   ⚠️ Tentando método alternativo direto...")
 		
 		// Método direto: executar o comando diretamente
-		cmd := exec.Command("kubectl", "port-forward", "-n", namespace, "svc/girus-frontend", "8000:80", "--address", "0.0.0.0")
+		cmd := exec.Command("kubectl", "port-forward", "-n", namespace, "svc/girus-frontend", "8000:80", "--address", "0.0.0.0/0")
 		
 		// Redirecionar saída para /dev/null
 		devNull, _ := os.Open(os.DevNull)
@@ -954,7 +954,7 @@ echo $!  # Retorna o PID
 		// Verificar conectividade
 		time.Sleep(3 * time.Second)
 		for i := 0; i < 3; i++ {
-			checkCmd := exec.Command("curl", "-s", "--max-time", "2", "-o", "/dev/null", "-w", "%{http_code}", "http://localhost:8000")
+			checkCmd := exec.Command("curl", "-s", "--max-time", "2", "-o", "/dev/null", "-w", "%{http_code}", "http://192.168.4.69:8000")
 			var out bytes.Buffer
 			checkCmd.Stdout = &out
 			
@@ -973,12 +973,12 @@ echo $!  # Retorna o PID
 	if !frontendSuccess {
 		fmt.Println("   🔄 Último recurso: port-forward ao deployment...")
 		// Método com deployment em vez de service, que pode ser mais estável
-		finalCmd := fmt.Sprintf("kubectl port-forward -n %s deployment/girus-frontend 8000:80 --address 0.0.0.0 > /dev/null 2>&1 &", namespace)
+		finalCmd := fmt.Sprintf("kubectl port-forward -n %s deployment/girus-frontend 8000:80 --address 192.168.4.69 > /dev/null 2>&1 &", namespace)
 		exec.Command("bash", "-c", finalCmd).Run()
 		
 		// Verificação final
 		time.Sleep(3 * time.Second)
-		checkCmd := exec.Command("curl", "-s", "--max-time", "2", "-o", "/dev/null", "-w", "%{http_code}", "http://localhost:8000")
+		checkCmd := exec.Command("curl", "-s", "--max-time", "2", "-o", "/dev/null", "-w", "%{http_code}", "http://192.168.4.69:8000")
 		var out bytes.Buffer
 		checkCmd.Stdout = &out
 		
@@ -1700,12 +1700,12 @@ Por padrão, o deployment embutido no binário é utilizado.`,
 				fmt.Printf("Não foi possível configurar o acesso automático: %v\n", err)
 				fmt.Println("\nVocê pode tentar configurar manualmente com os comandos:")
 				fmt.Println("kubectl port-forward -n girus svc/girus-backend 8080:8080 --address 0.0.0.0")
-				fmt.Println("kubectl port-forward -n girus svc/girus-frontend 8000:80 --address 0.0.0.0")
+				fmt.Println("kubectl port-forward -n girus svc/girus-frontend 8000:80 --address 192.168.4.69")
 			} else {
 				fmt.Println("✅")
 				fmt.Println("Acesso configurado com sucesso!")
 				fmt.Println("📊 Backend: http://localhost:8080")
-				fmt.Println("🖥️  Frontend: http://localhost:8000")
+				fmt.Println("🖥️  Frontend: http://192.168.4.69:8000")
 				
 				// Abrir o navegador se não foi especificado para pular
 				if !skipBrowser {
@@ -1720,7 +1720,7 @@ Por padrão, o deployment embutido no binário é utilizado.`,
 			fmt.Println("\n⏩ Port-forward ignorado conforme solicitado")
 			fmt.Println("\nPara acessar o Girus posteriormente, execute:")
 			fmt.Println("kubectl port-forward -n girus svc/girus-backend 8080:8080 --address 0.0.0.0")
-			fmt.Println("kubectl port-forward -n girus svc/girus-frontend 8000:80 --address 0.0.0.0")
+			fmt.Println("kubectl port-forward -n girus svc/girus-frontend 8000:80 --address 192.168.4.69")
 		}
 		
 		// Exibir mensagem de conclusão
@@ -1731,7 +1731,7 @@ Por padrão, o deployment embutido no binário é utilizado.`,
 		// Exibir acesso ao navegador como próximo passo
 		fmt.Println("📋 PRÓXIMOS PASSOS:")
 		fmt.Println("  • Acesse o Girus no navegador:")
-		fmt.Println("    http://localhost:8000")
+		fmt.Println("    http://192.168.4.69:8000")
 		
 		// Instruções para laboratórios
 		fmt.Println("\n  • Para aplicar mais templates de laboratórios com o Girus:")
@@ -2029,15 +2029,15 @@ func addLabFromFile(labFile string, verboseMode bool) {
 			fmt.Println("⚠️ Aviso:", err)
 			fmt.Println("   Para configurar manualmente, execute:")
 			fmt.Println("   kubectl port-forward -n girus svc/girus-backend 8080:8080 --address 0.0.0.0")
-			fmt.Println("   kubectl port-forward -n girus svc/girus-frontend 8000:80 --address 0.0.0.0")
+			fmt.Println("   kubectl port-forward -n girus svc/girus-frontend 8000:80 --address 192.168.4.69")
 		} else {
 			fmt.Println("✅ Port-forwards configurados com sucesso!")
 			fmt.Println("   🔹 Backend: http://localhost:8080")
-			fmt.Println("   🔹 Frontend: http://localhost:8000")
+			fmt.Println("   🔹 Frontend: http://192.168.4.69:8000")
 		}
 	} else {
 		// Verificar conexão com o frontend mesmo que o port-forward não seja necessário
-		checkCmd := exec.Command("curl", "-s", "--max-time", "1", "-o", "/dev/null", "-w", "%{http_code}", "http://localhost:8000")
+		checkCmd := exec.Command("curl", "-s", "--max-time", "1", "-o", "/dev/null", "-w", "%{http_code}", "http://192.168.4.69:8000")
 		var out bytes.Buffer
 		checkCmd.Stdout = &out
 		
@@ -2049,7 +2049,7 @@ func addLabFromFile(labFile string, verboseMode bool) {
 			err := setupPortForward("girus")
 			if err != nil {
 				fmt.Println("   ⚠️", err)
-				fmt.Println("   Configure manualmente: kubectl port-forward -n girus svc/girus-frontend 8000:80 --address 0.0.0.0")
+				fmt.Println("   Configure manualmente: kubectl port-forward -n girus svc/girus-frontend 8000:80 --address 192.168.4.69")
 			} else {
 				fmt.Println("   ✅ Port-forwards reconfigurados com sucesso!")
 			}
@@ -2126,7 +2126,7 @@ func checkPortForwardNeeded() bool {
 			frontendNeeded = true
 		} else {
 			// Verificar se a conexão com o frontend está funcionando
-			frontendCheckCmd := exec.Command("curl", "-s", "--max-time", "2", "-o", "/dev/null", "-w", "%{http_code}", "http://localhost:8000")
+			frontendCheckCmd := exec.Command("curl", "-s", "--max-time", "2", "-o", "/dev/null", "-w", "%{http_code}", "http://192.168.4.69:8000")
 			var out bytes.Buffer
 			frontendCheckCmd.Stdout = &out
 			if frontendCheckCmd.Run() != nil {
