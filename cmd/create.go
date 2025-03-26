@@ -40,23 +40,8 @@ data:
     title: "Introdução ao Linux"
     description: "Laboratório básico para praticar comandos Linux essenciais e conceitos fundamentais"
     duration: 30m
+    image: "linuxtips/girus-devops:0.1"
     tasks:
-      - name: "Preparação do ambiente"
-        description: "Atualize os pacotes e instale as ferramentas necessárias"
-        steps:
-          - "Atualize a lista de pacotes disponíveis:"
-          - "` + "`" + `apt update` + "`" + `"
-          - "Instale o editor de texto nano:"
-          - "` + "`" + `apt install -y nano` + "`" + `"
-        tips:
-          - type: "info"
-            title: "Sobre o nano"
-            content: "Nano é um editor de texto simples para terminais. Ele é mais fácil de usar que outros editores como vim ou emacs, e é perfeito para iniciantes."
-        validation:
-          - command: "which nano"
-            expectedOutput: "/usr/bin/nano"
-            errorMessage: "Nano não foi instalado corretamente"
-
       - name: "Navegação básica"
         description: "Aprenda os comandos essenciais para navegar no sistema de arquivos Linux"
         steps:
@@ -85,9 +70,10 @@ data:
       - name: "Manipulação de arquivos"
         description: "Aprenda a criar, editar e gerenciar arquivos no Linux"
         steps:
-          - "Crie um arquivo de texto usando o editor nano:"
-          - "` + "`" + `nano notes.txt` + "`" + `"
-          - "Adicione algumas linhas de texto e salve com Ctrl+O e saia com Ctrl+X"
+          - "Crie um arquivo de texto usando o editor Vim:"
+          - "` + "`" + `vim notes.txt` + "`" + `"
+          - "Para adicionar texto, pressione 'i' para entrar no modo de inserção e comece a digitar. Pressione 'Esc' para sair do modo de inserção e 'Shift+:' para salvar e sair."
+          - "Salve e saia do Vim com 'Shift+:' e digite 'wq'"
           - "Visualize o conteúdo do arquivo:"
           - "` + "`" + `cat notes.txt` + "`" + `"
           - "Copie um arquivo para outro nome:"
@@ -116,7 +102,7 @@ data:
           - "Veja os processos em execução:"
           - "` + "`" + `ps aux` + "`" + `"
           - "Monitore os processos e recursos em tempo real:"
-          - "` + "`" + `top` + "`" + `"
+          - "` + "`" + `htop` + "`" + `"
           - "Pressione 'q' para sair do top"
           - "Execute um processo em segundo plano:"
           - "` + "`" + `sleep 300 &` + "`" + `"
@@ -147,10 +133,13 @@ data:
     title: "Fundamentos de Kubernetes"
     description: "Aprenda comandos básicos do Kubernetes para gerenciar recursos em um cluster"
     duration: 60m
+    image: "linuxtips/girus-kind-single-node:0.1"
     tasks:
       - name: "Explorando o Cluster"
         description: "Aprenda a verificar os componentes básicos de um cluster Kubernetes"
         steps:
+          - "Verifique se o kubectl está instalado:"
+          - "` + "`" + `kubectl --version` + "`" + `"
           - "Verifique os nós do cluster executando:"
           - "` + "`" + `kubectl get nodes` + "`" + `"
           - "Veja informações mais detalhadas sobre os nós:"
@@ -216,103 +205,7 @@ data:
         validation:
           - command: "kubectl get pod nginx-pod -n k8s-demo -o jsonpath='{.status.phase}' 2>/dev/null || echo ''"
             expectedOutput: "Running"
-            errorMessage: "O Pod nginx-pod não está no estado Running"
-      
-      - name: "Usando ConfigMaps e Secrets"
-        description: "Aprenda a gerenciar configurações e dados sensíveis no Kubernetes"
-        steps:
-          - "Crie um arquivo configmap.yaml com o seguinte conteúdo:"
-          - |
-            ` + "```yaml" + `
-            apiVersion: v1
-            kind: ConfigMap
-            metadata:
-              name: app-config
-              namespace: k8s-demo
-            data:
-              app.properties: |
-                environment=development
-                log.level=info
-              database.properties: |
-                db.host=db.example.com
-                db.port=5432
-            ` + "```" + `
-          - "Crie o ConfigMap executando:"
-          - "` + "`" + `kubectl apply -f configmap.yaml` + "`" + `"
-          - "Veja o ConfigMap criado:"
-          - "` + "`" + `kubectl get configmap app-config -n k8s-demo -o yaml` + "`" + `"
-          - "Crie um arquivo secret.yaml com o seguinte conteúdo:"
-          - |
-            ` + "```yaml" + `
-            apiVersion: v1
-            kind: Secret
-            metadata:
-              name: app-secret
-              namespace: k8s-demo
-            type: Opaque
-            data:
-              db.user: YWRtaW4=  # admin em base64
-              db.password: cGFzc3dvcmQxMjM=  # password123 em base64
-            ` + "```" + `
-          - "Crie o Secret executando:"
-          - "` + "`" + `kubectl apply -f secret.yaml` + "`" + `"
-          - "Verifique o Secret criado (observe que o conteúdo aparece codificado):"
-          - "` + "`" + `kubectl get secret app-secret -n k8s-demo -o yaml` + "`" + `"
-          - "Para criar um pod que utilize esses recursos, crie um arquivo config-pod.yaml:"
-          - |
-            ` + "```yaml" + `
-            apiVersion: v1
-            kind: Pod
-            metadata:
-              name: config-pod
-              namespace: k8s-demo
-            spec:
-              containers:
-              - name: app
-                image: busybox
-                command: ['sh', '-c', 'echo The app is running! && sleep 3600']
-                env:
-                - name: DB_USER
-                  valueFrom:
-                    secretKeyRef:
-                      name: app-secret
-                      key: db.user
-                - name: LOG_LEVEL
-                  valueFrom:
-                    configMapKeyRef:
-                      name: app-config
-                      key: log.level
-                volumeMounts:
-                - name: config-volume
-                  mountPath: /config
-              volumes:
-              - name: config-volume
-                configMap:
-                  name: app-config
-            ` + "```" + `
-          - "Crie o pod executando:"
-          - "` + "`" + `kubectl apply -f config-pod.yaml` + "`" + `"
-          - "Verifique as variáveis de ambiente no pod:"
-          - "` + "`" + `kubectl exec -it config-pod -n k8s-demo -- env | grep -E 'DB_USER|LOG_LEVEL'` + "`" + `"
-          - "Verifique os arquivos montados do ConfigMap:"
-          - "` + "`" + `kubectl exec -it config-pod -n k8s-demo -- ls -la /config` + "`" + `"
-        tips:
-          - type: "warning"
-            title: "Secrets não são 100% seguros"
-            content: "Os Secrets no Kubernetes oferecem apenas codificação base64 por padrão, não criptografia. Para informações realmente sensíveis, considere usar soluções como Vault ou integrações com AWS Secrets Manager, Azure Key Vault, etc."
-          - type: "tip"
-            title: "Criação rápida de secrets"
-            content: "Você pode criar secrets diretamente com o comando kubectl: ` + "`" + `kubectl create secret generic app-secret --from-literal=db.user=admin --from-literal=db.password=password123 -n k8s-demo` + "`" + `"
-          - type: "info"
-            title: "Múltiplos usos"
-            content: "ConfigMaps e Secrets podem ser usados como variáveis de ambiente, volumes montados, ou em argumentos de comando. Escolha a melhor forma para o seu caso de uso."
-        validation:
-          - command: "kubectl get configmap app-config -n k8s-demo -o name 2>/dev/null || echo ''"
-            expectedOutput: "configmap/app-config"
-            errorMessage: "O ConfigMap app-config não foi criado corretamente"
-          - command: "kubectl get pod config-pod -n k8s-demo -o jsonpath='{.status.phase}' 2>/dev/null || echo ''"
-            expectedOutput: "Running"
-            errorMessage: "O Pod config-pod não está em execução"`
+            errorMessage: "O Pod nginx-pod não está no estado Running"`
 
 // Conteúdo do template do Docker
 const basicDockerTemplate = `apiVersion: v1
@@ -328,16 +221,14 @@ data:
     title: "Fundamentos de Docker"
     description: "Aprenda comandos básicos do Docker para criar, gerenciar e executar containers"
     duration: 60m
+    image: "linuxtips/girus-devops:0.1"
     youtubeVideo: "https://www.youtube.com/watch?v=0cDj7citEjE"
     tasks:
       - name: "Explorando o Ambiente Docker"
         description: "Aprenda a verificar o ambiente Docker e seus componentes básicos"
         steps:
-          - "Vamos começar instalando o comando curl:"
-          - "` + "`" + `apt update` + "`" + `"
-          - "` + "`" + `apt install -y curl` + "`" + `"
-          - "Faça a instalação do Docker:"
-          - "` + "`" + `curl -fsSL https://get.docker.com | bash` + "`" + `"
+          - "Inicie o Docker:"
+          - "` + "`" + `sudo inicia-docker` + "`" + `"
           - "Verifique a versão do Docker instalada:"
           - "` + "`" + `docker --version` + "`" + `"
           - "Verifique informações detalhadas sobre a instalação do Docker:"
@@ -396,6 +287,469 @@ data:
           - command: "docker ps -a --format '{{.Names}}' | grep -w meu-nginx || echo ''"
             expectedOutput: "meu-nginx"
             errorMessage: "O container meu-nginx não foi criado"`
+
+// Conteúdo do template de Administração de Usuários Linux
+const linuxUsersTemplate = `apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: linux-users-lab
+  namespace: girus
+  labels:
+    app: girus-lab-template
+data:
+  lab.yaml: |
+    name: linux-users-admin
+    title: "Administrando Usuários no Linux"
+    description: "Aprenda a criar, modificar e gerenciar contas de usuários e grupos no Linux"
+    duration: 45m
+    image: "linuxtips/girus-devops:0.1"
+    tasks:
+      - name: "Gerenciamento de Usuários"
+        description: "Aprenda a criar, modificar e remover contas de usuários"
+        steps:
+          - "Visualize informações sobre o usuário atual:"
+          - "` + "`" + `id` + "`" + `"
+          - "Veja a lista de todos os usuários no sistema:"
+          - "` + "`" + `cat /etc/passwd` + "`" + `"
+          - "Crie um novo usuário chamado 'testuser':"
+          - "` + "`" + `sudo useradd testuser` + "`" + `"
+          - "Defina uma senha para o novo usuário:"
+          - "` + "`" + `sudo passwd testuser` + "`" + `"
+          - "Veja as informações do usuário criado:"
+          - "` + "`" + `id testuser` + "`" + `"
+          - "Modifique o shell padrão do usuário para bash:"
+          - "` + "`" + `sudo usermod -s /bin/bash testuser` + "`" + `"
+          - "Adicione um comentário (nome completo) ao usuário:"
+          - "` + "`" + `sudo usermod -c \"Usuário de Teste\" testuser` + "`" + `"
+          - "Veja as alterações no arquivo /etc/passwd:"
+          - "` + "`" + `grep testuser /etc/passwd` + "`" + `"
+        tips:
+          - type: "info"
+            title: "Comandos para Gerenciamento de Usuários"
+            content: "Os comandos principais para gerenciar usuários são: useradd (criar), usermod (modificar), userdel (remover), passwd (definir senha) e id (visualizar informações)."
+          - type: "warning"
+            title: "Segurança"
+            content: "Sempre use senhas fortes e gerencie com cuidado as contas de usuários com privilégios administrativos."
+        validation:
+          - command: "grep testuser /etc/passwd | wc -l"
+            expectedOutput: "1"
+            errorMessage: "O usuário testuser não foi criado corretamente"
+      
+      - name: "Gerenciamento de Grupos"
+        description: "Aprenda a criar e gerenciar grupos de usuários"
+        steps:
+          - "Veja a lista de todos os grupos no sistema:"
+          - "` + "`" + `cat /etc/group` + "`" + `"
+          - "Crie um novo grupo chamado 'projeto':"
+          - "` + "`" + `sudo groupadd projeto` + "`" + `"
+          - "Adicione o usuário 'testuser' ao novo grupo:"
+          - "` + "`" + `sudo usermod -aG projeto testuser` + "`" + `"
+          - "Verifique se o usuário está no grupo:"
+          - "` + "`" + `groups testuser` + "`" + `"
+          - "Crie outro usuário para o grupo projeto:"
+          - "` + "`" + `sudo useradd -G projeto colaborador` + "`" + `"
+          - "Defina uma senha para o novo usuário:"
+          - "` + "`" + `sudo passwd colaborador` + "`" + `"
+          - "Liste todos os usuários do grupo projeto:"
+          - "` + "`" + `grep projeto /etc/group` + "`" + `"
+        tips:
+          - type: "info"
+            title: "Comandos para Gerenciamento de Grupos"
+            content: "Os comandos principais para gerenciar grupos são: groupadd (criar), groupmod (modificar), groupdel (remover) e groups (listar grupos de um usuário)."
+          - type: "tip"
+            title: "Opção -a no usermod"
+            content: "Ao adicionar um usuário a um grupo com usermod, sempre use a opção -a junto com -G para adicionar aos grupos existentes, sem removê-lo de outros grupos."
+        validation:
+          - command: "grep projeto /etc/group | grep -E 'testuser|colaborador' | wc -l"
+            expectedOutput: "1"
+            errorMessage: "O grupo 'projeto' não foi criado corretamente ou os usuários não foram adicionados"`
+
+// Conteúdo do template de Permissões de Arquivos Linux
+const linuxPermsTemplate = `apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: linux-permissions-lab
+  namespace: girus
+  labels:
+    app: girus-lab-template
+data:
+  lab.yaml: |
+    name: linux-file-permissions
+    title: "Permissões de Arquivos no Linux"
+    description: "Aprenda a visualizar e modificar permissões de arquivos e diretórios no Linux"
+    duration: 40m
+    image: "linuxtips/girus-devops:0.1"
+    youtubeVideo: "https://www.youtube.com/watch?v=tT69ipXOzfc"
+    tasks:
+      - name: "Entendendo Permissões Básicas"
+        description: "Aprenda a visualizar e interpretar permissões de arquivos e diretórios"
+        steps:
+          - "Crie um diretório para o exercício:"
+          - "` + "`" + `mkdir ~/permissoes` + "`" + `"
+          - "Entre no diretório:"
+          - "` + "`" + `cd ~/permissoes` + "`" + `"
+          - "Crie arquivos de teste:"
+          - "` + "`" + `touch arquivo1.txt arquivo2.txt` + "`" + `"
+          - "Visualize as permissões atuais:"
+          - "` + "`" + `ls -la` + "`" + `"
+          - "Observe o formato das permissões: [tipo][dono][grupo][outros]"
+          - "Exemplo: -rw-r--r-- significa arquivo comum, dono pode ler e escrever, grupo e outros só podem ler"
+          - "Crie um script simples:"
+          - "` + "`" + `echo '#!/bin/bash' > script.sh` + "`" + `"
+          - "` + "`" + `echo 'echo \"Hello, World!\"' >> script.sh` + "`" + `"
+          - "Tente executar o script:"
+          - "` + "`" + `./script.sh` + "`" + `"
+          - "Você verá uma mensagem de permissão negada"
+        tips:
+          - type: "info"
+            title: "Formato das permissões"
+            content: "As permissões são representadas por 10 caracteres: o primeiro indica o tipo (- para arquivo, d para diretório), seguido por três grupos de rwx (read, write, execute) para dono, grupo e outros."
+          - type: "tip"
+            title: "Significado dos modos"
+            content: "r (4) = permissão de leitura, w (2) = permissão de escrita, x (1) = permissão de execução. Os valores numéricos são somados para definir as permissões em octal."
+        validation:
+          - command: "test -f ~/permissoes/script.sh && echo 'ok'"
+            expectedOutput: "ok"
+            errorMessage: "O arquivo script.sh não foi criado corretamente"
+      
+      - name: "Modificando Permissões"
+        description: "Aprenda a modificar permissões de arquivos usando chmod"
+        steps:
+          - "Adicione permissão de execução ao script criado anteriormente:"
+          - "` + "`" + `chmod +x script.sh` + "`" + `"
+          - "Verifique as novas permissões:"
+          - "` + "`" + `ls -la script.sh` + "`" + `"
+          - "Agora execute o script:"
+          - "` + "`" + `./script.sh` + "`" + `"
+          - "Defina permissões usando notação octal:"
+          - "` + "`" + `chmod 644 arquivo1.txt` + "`" + `"
+          - "` + "`" + `chmod 640 arquivo2.txt` + "`" + `"
+          - "Verifique as permissões após a mudança:"
+          - "` + "`" + `ls -la arquivo*.txt` + "`" + `"
+          - "Use chmod recursivo para modificar permissões em lote:"
+          - "` + "`" + `mkdir -p subdir/subsubdir` + "`" + `"
+          - "` + "`" + `touch subdir/file1 subdir/subsubdir/file2` + "`" + `"
+          - "` + "`" + `chmod -R 750 subdir` + "`" + `"
+          - "Verifique as permissões recursivas:"
+          - "` + "`" + `ls -la subdir` + "`" + `"
+          - "` + "`" + `ls -la subdir/subsubdir` + "`" + `"
+        tips:
+          - type: "info"
+            title: "Notação simbólica vs octal"
+            content: "Você pode usar notação simbólica (chmod u+x) ou octal (chmod 755). Em octal, cada dígito representa as permissões para dono, grupo e outros, respectivamente."
+          - type: "warning"
+            title: "Permissões e segurança"
+            content: "Permissões muito abertas (ex: 777) representam riscos de segurança. Use sempre as permissões mínimas necessárias."
+        validation:
+          - command: "test -x ~/permissoes/script.sh && echo 'ok'"
+            expectedOutput: "ok"
+            errorMessage: "O script não tem permissão de execução"
+          - command: "stat -c %a ~/permissoes/arquivo1.txt"
+            expectedOutput: "644"
+            errorMessage: "O arquivo1.txt não tem as permissões corretas (644)"
+      
+      - name: "Propriedade de Arquivos e umask"
+        description: "Aprenda a alterar o proprietário dos arquivos e configurar o umask"
+        steps:
+          - "Veja o proprietário atual dos arquivos:"
+          - "` + "`" + `ls -la` + "`" + `"
+          - "Verifique o umask atual:"
+          - "` + "`" + `umask` + "`" + `"
+          - "Crie um novo arquivo com o umask padrão:"
+          - "` + "`" + `touch arquivo_umask_padrao.txt` + "`" + `"
+          - "` + "`" + `ls -la arquivo_umask_padrao.txt` + "`" + `"
+          - "Mude temporariamente o umask para 027:"
+          - "` + "`" + `umask 027` + "`" + `"
+          - "Crie outro arquivo com o novo umask:"
+          - "` + "`" + `touch arquivo_umask_027.txt` + "`" + `"
+          - "` + "`" + `ls -la arquivo_umask_027.txt` + "`" + `"
+          - "Volte ao umask padrão (geralmente 022):"
+          - "` + "`" + `umask 022` + "`" + `"
+          - "Se você tiver permissão de sudo, altere o proprietário de um arquivo:"
+          - "` + "`" + `sudo chown root:root arquivo1.txt` + "`" + `"
+          - "Verifique a mudança de proprietário:"
+          - "` + "`" + `ls -la arquivo1.txt` + "`" + `"
+        tips:
+          - type: "info"
+            title: "Umask explicado"
+            content: "O umask define quais permissões são removidas por padrão ao criar novos arquivos e diretórios. Um umask de 022 remove escrita para grupo e outros, resultando em 644 para arquivos e 755 para diretórios."
+          - type: "tip"
+            title: "Permissão padrão"
+            content: "A permissão padrão para diretórios é 777 e para arquivos é 666. O valor do umask é subtraído dessas permissões padrão."
+        validation:
+          - command: "umask"
+            expectedOutput: "0022"
+            errorMessage: "O umask não foi revertido para o valor padrão"
+          - command: "stat -c %a ~/permissoes/arquivo_umask_027.txt 2>/dev/null || echo 'ausente'"
+            expectedOutput: "640"
+            errorMessage: "O arquivo com umask 027 não tem as permissões esperadas ou não foi criado"`
+
+// Conteúdo do template de Gerenciamento de Containers Docker
+const dockerContainersTemplate = `apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: docker-containers-lab
+  namespace: girus
+  labels:
+    app: girus-lab-template
+data:
+  lab.yaml: |
+    name: docker-containers-management
+    title: "Criando, Listando e Removendo Containers"
+    description: "Aprenda a gerenciar o ciclo de vida de containers Docker: criação, listagem e remoção"
+    duration: 45m
+    image: "linuxtips/girus-devops:0.1"
+    tasks:
+      - name: "Criando Containers Docker"
+        description: "Aprenda a criar containers com diferentes configurações"
+        steps:
+          - "Inicie o Docker:"
+          - "` + "`" + `sudo inicia-docker` + "`" + `"
+          - "Verifique se o Docker está em execução:"
+          - "` + "`" + `docker info` + "`" + `"
+          - "Crie um container simples do Nginx:"
+          - "` + "`" + `docker run --name webserver -d nginx` + "`" + `"
+          - "Crie um container com mapeamento de portas:"
+          - "` + "`" + `docker run --name webserver-ports -d -p 8080:80 nginx` + "`" + `"
+          - "Crie um container com variáveis de ambiente:"
+          - "` + "`" + `docker run --name env-test -e MINHA_VAR=test -d alpine sh -c 'while true; do sleep 10; done'` + "`" + `"
+          - "Crie um container com limite de recursos:"
+          - "` + "`" + `docker run --name limited-resources -d --memory=100m --cpus=0.5 nginx` + "`" + `"
+          - "Crie um container efêmero (que se auto-remove):"
+          - "` + "`" + `docker run --rm alpine echo \"Este container será removido automaticamente\"` + "`" + `"
+        tips:
+          - type: "info"
+            title: "Opções comuns do docker run"
+            content: "-d (detached), -p (mapeamento de portas), -e (variáveis de ambiente), -v (volumes), --name (nomear o container), --rm (auto-remover)"
+          - type: "warning"
+            title: "Recursos limitados"
+            content: "Em ambientes de produção, sempre limite os recursos (memória/CPU) que um container pode usar para evitar que um único container consume todos os recursos do host."
+        validation:
+          - command: "docker ps -a --format '{{.Names}}' | grep -E 'webserver|env-test|limited-resources' | wc -l"
+            expectedOutput: "4"
+            errorMessage: "Alguns containers não foram criados corretamente"
+      
+      - name: "Listando e Inspecionando Containers"
+        description: "Aprenda a listar, filtrar e inspecionar containers"
+        steps:
+          - "Liste todos os containers em execução:"
+          - "` + "`" + `docker ps` + "`" + `"
+          - "Liste todos os containers (incluindo os parados):"
+          - "` + "`" + `docker ps -a` + "`" + `"
+          - "Liste apenas os IDs dos containers:"
+          - "` + "`" + `docker ps -q` + "`" + `"
+          - "Filtre containers por nome:"
+          - "` + "`" + `docker ps -a --filter \"name=webserver\"` + "`" + `"
+          - "Filtre containers por status:"
+          - "` + "`" + `docker ps -a --filter \"status=running\"` + "`" + `"
+          - "Use formatação personalizada para a saída:"
+          - "` + "`" + `docker ps --format \"{{.Names}} - {{.Status}} - {{.Image}}\"` + "`" + `"
+          - "Inspecione detalhes de um container específico:"
+          - "` + "`" + `docker inspect webserver` + "`" + `"
+          - "Extraia uma informação específica com formato:"
+          - "` + "`" + `docker inspect --format='{{.State.Status}}' webserver` + "`" + `"
+          - "Verifique os logs de um container:"
+          - "` + "`" + `docker logs webserver` + "`" + `"
+          - "Verifique estatísticas de uso de recursos:"
+          - "` + "`" + `docker stats --no-stream` + "`" + `"
+        tips:
+          - type: "tip"
+            title: "Formatação no Docker"
+            content: "O Docker suporta templates Go para formatar a saída de comandos como ps e inspect. Use --format para personalizar o que você quer ver."
+          - type: "info"
+            title: "Dica para filtros"
+            content: "Você pode combinar múltiplos filtros com --filter, e eles atuam como condição 'AND' (todos devem ser verdadeiros)."
+        validation:
+          - command: "docker ps -a --format '{{.Names}}' | sort | tr '\n' ',' | grep -E 'webserver,|env-test,|limited-resources,' | wc -l"
+            expectedOutput: "1"
+            errorMessage: "Não foi possível listar todos os containers corretamente"
+      
+      - name: "Gerenciando o Ciclo de Vida dos Containers"
+        description: "Aprenda a iniciar, parar, reiniciar e remover containers"
+        steps:
+          - "Pare um container em execução:"
+          - "` + "`" + `docker stop webserver` + "`" + `"
+          - "Verifique se o container foi parado:"
+          - "` + "`" + `docker ps -a --filter name=webserver` + "`" + `"
+          - "Inicie novamente o container parado:"
+          - "` + "`" + `docker start webserver` + "`" + `"
+          - "Reinicie um container:"
+          - "` + "`" + `docker restart webserver-ports` + "`" + `"
+          - "Pause um container (congele seu estado):"
+          - "` + "`" + `docker pause env-test` + "`" + `"
+          - "Despause um container congelado:"
+          - "` + "`" + `docker unpause env-test` + "`" + `"
+          - "Remova um container (deve estar parado):"
+          - "` + "`" + `docker stop limited-resources` + "`" + `"
+          - "` + "`" + `docker rm limited-resources` + "`" + `"
+          - "Remova um container forçadamente (mesmo em execução):"
+          - "` + "`" + `docker rm -f webserver-ports` + "`" + `"
+          - "Remova todos os containers parados:"
+          - "` + "`" + `docker container prune -f` + "`" + `"
+          - "Crie e remova um container em um único comando:"
+          - "` + "`" + `docker run --rm alpine echo \"Criado e removido automaticamente\"` + "`" + `"
+        tips:
+          - type: "warning"
+            title: "Remoção forçada"
+            content: "O parâmetro -f (force) para docker rm pode causar corrupção de dados se o container estiver gravando informações. Use com cuidado em ambientes de produção."
+          - type: "info"
+            title: "Tempo de espera"
+            content: "Por padrão, docker stop espera 10 segundos antes de enviar SIGKILL. Você pode ajustar isso com --time=segundos."
+        validation:
+          - command: "docker ps -a --format '{{.Names}}' | grep -E 'limited-resources|webserver-ports' | wc -l"
+            expectedOutput: "0"
+            errorMessage: "Os containers não foram removidos corretamente"`
+
+// Conteúdo do template de Deployment no Kubernetes
+const k8sDeploymentTemplate = `apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: k8s-deployment-lab
+  namespace: girus
+  labels:
+    app: girus-lab-template
+data:
+  lab.yaml: |
+    name: k8s-nginx-deployment
+    title: "Deployment Nginx no Kubernetes"
+    description: "Aprenda a criar um deployment do Nginx e verificar os detalhes dos pods no Kubernetes"
+    duration: 45m
+    image: "linuxtips/girus-kind-single-node:0.1"
+    youtubeVideo: "https://www.youtube.com/watch?v=sU235yW6QJM"
+    tasks:
+      - name: "Criando um Deployment do Nginx"
+        description: "Aprenda a criar um deployment do Nginx usando kubectl"
+        steps:
+          - "Verifique se o cluster Kubernetes está em execução:"
+          - "` + "`" + `kubectl get nodes` + "`" + `"
+          - "Crie um namespace para o exercício:"
+          - "` + "`" + `kubectl create namespace nginx-example` + "`" + `"
+          - "Crie um deployment do Nginx de forma imperativa:"
+          - "` + "`" + `kubectl create deployment nginx-deployment --image=nginx:latest --replicas=2 -n nginx-example` + "`" + `"
+          - "Verifique se o deployment foi criado:"
+          - "` + "`" + `kubectl get deployments -n nginx-example` + "`" + `"
+          - "Verifique o status da implantação:"
+          - "` + "`" + `kubectl rollout status deployment/nginx-deployment -n nginx-example` + "`" + `"
+          - "Agora, vamos criar outro deployment usando um arquivo YAML:"
+          - "Crie um arquivo deployment.yaml:"
+          - |
+            ` + "```yaml" + `
+            apiVersion: apps/v1
+            kind: Deployment
+            metadata:
+              name: nginx-declarative
+              namespace: nginx-example
+              labels:
+                app: nginx-declarative
+            spec:
+              replicas: 3
+              selector:
+                matchLabels:
+                  app: nginx-declarative
+              template:
+                metadata:
+                  labels:
+                    app: nginx-declarative
+                spec:
+                  containers:
+                  - name: nginx
+                    image: nginx:stable
+                    ports:
+                    - containerPort: 80
+                    resources:
+                      limits:
+                        cpu: "0.5"
+                        memory: "256Mi"
+                      requests:
+                        cpu: "0.1"
+                        memory: "128Mi"
+            ` + "```" + `
+          - "Aplique o arquivo YAML:"
+          - "` + "`" + `kubectl apply -f deployment.yaml` + "`" + `"
+          - "Verifique se ambos os deployments estão em execução:"
+          - "` + "`" + `kubectl get deployments -n nginx-example` + "`" + `"
+        tips:
+          - type: "info"
+            title: "Abordagens de criação"
+            content: "No Kubernetes, você pode criar recursos de forma imperativa (com comandos diretos) ou declarativa (usando arquivos YAML). A abordagem declarativa é preferida para ambientes de produção, pois facilita o controle de versão."
+          - type: "warning"
+            title: "Seletor de labels"
+            content: "É essencial que o seletor no deployment corresponda exatamente às labels dos pods, caso contrário, o deployment não conseguirá gerenciar os pods."
+        validation:
+          - command: "kubectl get deployments -n nginx-example -o name | wc -l"
+            expectedOutput: "2"
+            errorMessage: "Os deployments não foram criados corretamente"
+      
+      - name: "Verificando Detalhes dos Pods"
+        description: "Aprenda a verificar e depurar os pods criados pelo deployment"
+        steps:
+          - "Liste todos os pods gerados pelos deployments:"
+          - "` + "`" + `kubectl get pods -n nginx-example` + "`" + `"
+          - "Verifique os detalhes de um pod específico (substitua [pod-name] pelo nome real do pod):"
+          - "` + "`" + `POD_NAME=$(kubectl get pods -n nginx-example -l app=nginx-declarative -o jsonpath='{.items[0].metadata.name}')` + "`" + `"
+          - "` + "`" + `kubectl describe pod $POD_NAME -n nginx-example` + "`" + `"
+          - "Verifique os logs de um pod:"
+          - "` + "`" + `kubectl logs $POD_NAME -n nginx-example` + "`" + `"
+          - "Verifique os eventos no namespace:"
+          - "` + "`" + `kubectl get events -n nginx-example` + "`" + `"
+          - "Acesse a aplicação Nginx em um pod (isso abrirá um shell):"
+          - "` + "`" + `kubectl exec -it $POD_NAME -n nginx-example -- /bin/bash` + "`" + `"
+          - "Dentro do container, verifique se o Nginx está respondendo:"
+          - "` + "`" + `curl localhost:80` + "`" + `"
+          - "Saia do shell com o comando 'exit'"
+          - "Encaminhe a porta do pod para o seu computador local:"
+          - "` + "`" + `kubectl port-forward $POD_NAME 8080:80 -n nginx-example &` + "`" + `"
+          - "Agora você pode acessar o Nginx em localhost:8080 (use curl):"
+          - "` + "`" + `curl localhost:8080` + "`" + `"
+          - "Encerre o processo de port-forward:"
+          - "` + "`" + `pkill -f \"port-forward\"` + "`" + `"
+        tips:
+          - type: "tip"
+            title: "Filtrar pods por label"
+            content: "Use -l (--selector) para filtrar pods por labels, o que é útil quando há muitos pods no namespace."
+          - type: "info"
+            title: "Acessando logs"
+            content: "Para containers com múltiplos aplicativos (sidecar), especifique o container com -c [nome-container] no comando kubectl logs."
+        validation:
+          - command: "kubectl get pods -n nginx-example -l app=nginx-declarative --no-headers | wc -l"
+            expectedOutput: "3"
+            errorMessage: "O número de pods para o deployment declarativo não está correto"
+      
+      - name: "Expondo e Escalando o Deployment"
+        description: "Aprenda a expor o deployment como um serviço e escalar o número de réplicas"
+        steps:
+          - "Crie um serviço para expor o deployment:"
+          - "` + "`" + `kubectl expose deployment nginx-declarative --port=80 --type=ClusterIP -n nginx-example` + "`" + `"
+          - "Verifique se o serviço foi criado:"
+          - "` + "`" + `kubectl get services -n nginx-example` + "`" + `"
+          - "Escale o deployment para ter 5 réplicas:"
+          - "` + "`" + `kubectl scale deployment/nginx-declarative --replicas=5 -n nginx-example` + "`" + `"
+          - "Verifique se o número de pods foi atualizado:"
+          - "` + "`" + `kubectl get pods -n nginx-example -l app=nginx-declarative` + "`" + `"
+          - "Observe o estado da escala em tempo real:"
+          - "` + "`" + `kubectl rollout status deployment/nginx-declarative -n nginx-example` + "`" + `"
+          - "Atualize a imagem do deployment para uma versão específica:"
+          - "` + "`" + `kubectl set image deployment/nginx-declarative nginx=nginx:1.19 -n nginx-example` + "`" + `"
+          - "Verifique o histórico de rollout:"
+          - "` + "`" + `kubectl rollout history deployment/nginx-declarative -n nginx-example` + "`" + `"
+          - "Veja os detalhes de uma revisão específica:"
+          - "` + "`" + `kubectl rollout history deployment/nginx-declarative --revision=2 -n nginx-example` + "`" + `"
+          - "Faça rollback para a revisão anterior, se necessário:"
+          - "` + "`" + `kubectl rollout undo deployment/nginx-declarative -n nginx-example` + "`" + `"
+        tips:
+          - type: "info"
+            title: "Tipos de serviço"
+            content: "O Kubernetes oferece diferentes tipos de serviços: ClusterIP (interno), NodePort (expõe em cada nó), LoadBalancer (usa balanceador externo) e ExternalName (mapeia para um nome externo)."
+          - type: "warning"
+            title: "Escala e recursos"
+            content: "Ao escalar um deployment, certifique-se de que o cluster tem recursos suficientes (CPU/memória) para suportar o número de réplicas solicitado."
+        validation:
+          - command: "kubectl get pods -n nginx-example -l app=nginx-declarative --no-headers | wc -l"
+            expectedOutput: "5"
+            errorMessage: "O deployment não foi escalado corretamente para 5 réplicas"
+          - command: "kubectl get svc -n nginx-example -o name | grep nginx-declarative | wc -l"
+            expectedOutput: "1"
+            errorMessage: "O serviço para o deployment declarativo não foi criado corretamente"`
 
 // defaultDeployment contém o YAML de deployment padrão do Girus
 const defaultDeployment = `apiVersion: v1
@@ -1076,6 +1430,67 @@ var createClusterCmd = &cobra.Command{
 	Long: `Cria um cluster Kind com o nome "girus" e implanta todos os componentes necessários.
 Por padrão, o deployment embutido no binário é utilizado.`,
 	Run: func(cmd *cobra.Command, args []string) {
+		// Verificar se o Docker está instalado e funcionando
+		fmt.Println("🔄 Verificando pré-requisitos...")
+		dockerCmd := exec.Command("docker", "--version")
+		if err := dockerCmd.Run(); err != nil {
+			fmt.Println("❌ Docker não encontrado ou não está em execução")
+			fmt.Println("\nO Docker é necessário para criar um cluster Kind. Instruções de instalação:")
+			
+			// Detectar o sistema operacional para instruções específicas
+			if runtime.GOOS == "darwin" {
+				// macOS
+				fmt.Println("\n📦 Para macOS, recomendamos usar Colima (alternativa leve ao Docker Desktop):")
+				fmt.Println("1. Instale o Homebrew caso não tenha:")
+				fmt.Println("   /bin/bash -c \"$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)\"")
+				fmt.Println("2. Instale o Colima e o Docker CLI:")
+				fmt.Println("   brew install colima docker")
+				fmt.Println("3. Inicie o Colima:")
+				fmt.Println("   colima start")
+				fmt.Println("\nAlternativamente, você pode instalar o Docker Desktop para macOS de:")
+				fmt.Println("https://www.docker.com/products/docker-desktop")
+			} else if runtime.GOOS == "linux" {
+				// Linux
+				fmt.Println("\n📦 Para Linux, use o script de instalação oficial:")
+				fmt.Println("   curl -fsSL https://get.docker.com | bash")
+				fmt.Println("\nApós a instalação, adicione seu usuário ao grupo docker para evitar usar sudo:")
+				fmt.Println("   sudo usermod -aG docker $USER")
+				fmt.Println("   newgrp docker")
+				fmt.Println("\nE inicie o serviço:")
+				fmt.Println("   sudo systemctl enable docker")
+				fmt.Println("   sudo systemctl start docker")
+			} else {
+				// Windows ou outros sistemas
+				fmt.Println("\n📦 Visite https://www.docker.com/products/docker-desktop para instruções de instalação para seu sistema operacional")
+			}
+			
+			fmt.Println("\nApós instalar o Docker, execute novamente este comando.")
+			os.Exit(1)
+		}
+		
+		// Verificar se o serviço Docker está rodando
+		dockerInfoCmd := exec.Command("docker", "info")
+		if err := dockerInfoCmd.Run(); err != nil {
+			fmt.Println("❌ O serviço Docker não está em execução")
+			
+			if runtime.GOOS == "darwin" {
+				fmt.Println("\nPara macOS com Colima:")
+				fmt.Println("   colima start")
+				fmt.Println("\nPara Docker Desktop:")
+				fmt.Println("   Inicie o aplicativo Docker Desktop")
+			} else if runtime.GOOS == "linux" {
+				fmt.Println("\nInicie o serviço Docker:")
+				fmt.Println("   sudo systemctl start docker")
+			} else {
+				fmt.Println("\nInicie o Docker Desktop ou o serviço Docker apropriado para seu sistema.")
+			}
+			
+			fmt.Println("\nApós iniciar o Docker, execute novamente este comando.")
+			os.Exit(1)
+		}
+
+		fmt.Println("✅ Docker detectado e funcionando")
+		
 		// Verificar silenciosamente se o cluster já existe
 		checkCmd := exec.Command("kind", "get", "clusters")
 		output, err := checkCmd.Output()
@@ -1482,6 +1897,74 @@ Por padrão, o deployment embutido no binário é utilizado.`,
 			}
 			dockerTempFile.Close()
 			
+			// Criar um arquivo temporário para o template de Administração de Usuários Linux
+			linuxUsersTempFile, err := os.CreateTemp("", "linux-users-*.yaml")
+			if err != nil {
+				fmt.Fprintf(os.Stderr, "❌ Erro ao criar arquivo temporário para o template de Usuários Linux: %v\n", err)
+				fmt.Println("   A infraestrutura básica foi aplicada, mas sem o template de Usuários Linux.")
+				return
+			}
+			defer os.Remove(linuxUsersTempFile.Name()) // Limpar o arquivo temporário ao finalizar
+
+			// Escrever o conteúdo do template de Usuários Linux no arquivo temporário
+			if _, err := linuxUsersTempFile.WriteString(linuxUsersTemplate); err != nil {
+				fmt.Fprintf(os.Stderr, "❌ Erro ao escrever template de Usuários Linux no arquivo temporário: %v\n", err)
+				fmt.Println("   A infraestrutura básica foi aplicada, mas sem o template de Usuários Linux.")
+				return
+			}
+			linuxUsersTempFile.Close()
+			
+			// Criar um arquivo temporário para o template de Permissões de Arquivos Linux
+			linuxPermsTempFile, err := os.CreateTemp("", "linux-perms-*.yaml")
+			if err != nil {
+				fmt.Fprintf(os.Stderr, "❌ Erro ao criar arquivo temporário para o template de Permissões Linux: %v\n", err)
+				fmt.Println("   A infraestrutura básica foi aplicada, mas sem o template de Permissões Linux.")
+				return
+			}
+			defer os.Remove(linuxPermsTempFile.Name()) // Limpar o arquivo temporário ao finalizar
+
+			// Escrever o conteúdo do template de Permissões Linux no arquivo temporário
+			if _, err := linuxPermsTempFile.WriteString(linuxPermsTemplate); err != nil {
+				fmt.Fprintf(os.Stderr, "❌ Erro ao escrever template de Permissões Linux no arquivo temporário: %v\n", err)
+				fmt.Println("   A infraestrutura básica foi aplicada, mas sem o template de Permissões Linux.")
+				return
+			}
+			linuxPermsTempFile.Close()
+			
+			// Criar um arquivo temporário para o template de Gerenciamento de Containers Docker
+			dockerContainersTempFile, err := os.CreateTemp("", "docker-containers-*.yaml")
+			if err != nil {
+				fmt.Fprintf(os.Stderr, "❌ Erro ao criar arquivo temporário para o template de Containers Docker: %v\n", err)
+				fmt.Println("   A infraestrutura básica foi aplicada, mas sem o template de Containers Docker.")
+				return
+			}
+			defer os.Remove(dockerContainersTempFile.Name()) // Limpar o arquivo temporário ao finalizar
+
+			// Escrever o conteúdo do template de Containers Docker no arquivo temporário
+			if _, err := dockerContainersTempFile.WriteString(dockerContainersTemplate); err != nil {
+				fmt.Fprintf(os.Stderr, "❌ Erro ao escrever template de Containers Docker no arquivo temporário: %v\n", err)
+				fmt.Println("   A infraestrutura básica foi aplicada, mas sem o template de Containers Docker.")
+				return
+			}
+			dockerContainersTempFile.Close()
+			
+			// Criar um arquivo temporário para o template de Deployment Kubernetes
+			k8sDeploymentTempFile, err := os.CreateTemp("", "k8s-deployment-*.yaml")
+			if err != nil {
+				fmt.Fprintf(os.Stderr, "❌ Erro ao criar arquivo temporário para o template de Deployment Kubernetes: %v\n", err)
+				fmt.Println("   A infraestrutura básica foi aplicada, mas sem o template de Deployment Kubernetes.")
+				return
+			}
+			defer os.Remove(k8sDeploymentTempFile.Name()) // Limpar o arquivo temporário ao finalizar
+
+			// Escrever o conteúdo do template de Deployment Kubernetes no arquivo temporário
+			if _, err := k8sDeploymentTempFile.WriteString(k8sDeploymentTemplate); err != nil {
+				fmt.Fprintf(os.Stderr, "❌ Erro ao escrever template de Deployment Kubernetes no arquivo temporário: %v\n", err)
+				fmt.Println("   A infraestrutura básica foi aplicada, mas sem o template de Deployment Kubernetes.")
+				return
+			}
+			k8sDeploymentTempFile.Close()
+			
 			// Aplicar o template de laboratório Linux
 			if verboseMode {
 				// Executar normalmente mostrando o output
@@ -1521,6 +2004,54 @@ Por padrão, o deployment embutido no binário é utilizado.`,
 					fmt.Println("   A infraestrutura básica e os outros templates foram aplicados, mas sem o template de laboratório Docker.")
 				} else {
 					fmt.Println("   ✅ Template de laboratório Fundamentos de Docker aplicado com sucesso!")
+				}
+				
+				// Aplicar o template de Usuários Linux
+				fmt.Println("   Aplicando template de Administração de Usuários Linux...")
+				applyLinuxUsersCmd := exec.Command("kubectl", "apply", "-f", linuxUsersTempFile.Name())
+				applyLinuxUsersCmd.Stdout = os.Stdout
+				applyLinuxUsersCmd.Stderr = os.Stderr
+
+				if err := applyLinuxUsersCmd.Run(); err != nil {
+					fmt.Fprintf(os.Stderr, "❌ Erro ao aplicar o template de Usuários Linux: %v\n", err)
+				} else {
+					fmt.Println("   ✅ Template de Administração de Usuários Linux aplicado com sucesso!")
+				}
+				
+				// Aplicar o template de Permissões Linux
+				fmt.Println("   Aplicando template de Permissões de Arquivos Linux...")
+				applyLinuxPermsCmd := exec.Command("kubectl", "apply", "-f", linuxPermsTempFile.Name())
+				applyLinuxPermsCmd.Stdout = os.Stdout
+				applyLinuxPermsCmd.Stderr = os.Stderr
+
+				if err := applyLinuxPermsCmd.Run(); err != nil {
+					fmt.Fprintf(os.Stderr, "❌ Erro ao aplicar o template de Permissões Linux: %v\n", err)
+				} else {
+					fmt.Println("   ✅ Template de Permissões de Arquivos Linux aplicado com sucesso!")
+				}
+				
+				// Aplicar o template de Containers Docker
+				fmt.Println("   Aplicando template de Gerenciamento de Containers Docker...")
+				applyDockerContainersCmd := exec.Command("kubectl", "apply", "-f", dockerContainersTempFile.Name())
+				applyDockerContainersCmd.Stdout = os.Stdout
+				applyDockerContainersCmd.Stderr = os.Stderr
+
+				if err := applyDockerContainersCmd.Run(); err != nil {
+					fmt.Fprintf(os.Stderr, "❌ Erro ao aplicar o template de Containers Docker: %v\n", err)
+				} else {
+					fmt.Println("   ✅ Template de Gerenciamento de Containers Docker aplicado com sucesso!")
+				}
+				
+				// Aplicar o template de Deployment Kubernetes
+				fmt.Println("   Aplicando template de Deployment Nginx Kubernetes...")
+				applyK8sDeploymentCmd := exec.Command("kubectl", "apply", "-f", k8sDeploymentTempFile.Name())
+				applyK8sDeploymentCmd.Stdout = os.Stdout
+				applyK8sDeploymentCmd.Stderr = os.Stderr
+
+				if err := applyK8sDeploymentCmd.Run(); err != nil {
+					fmt.Fprintf(os.Stderr, "❌ Erro ao aplicar o template de Deployment Kubernetes: %v\n", err)
+				} else {
+					fmt.Println("   ✅ Template de Deployment Nginx Kubernetes aplicado com sucesso!")
 				}
 			} else {
 				// Usar barra de progresso para os templates
@@ -1583,6 +2114,35 @@ Por padrão, o deployment embutido no binário é utilizado.`,
 					err = applyDockerCmd.Run()
 					dockerSuccess := err == nil
 					
+					// Aplicar os novos templates
+					applyLinuxUsersCmd := exec.Command("kubectl", "apply", "-f", linuxUsersTempFile.Name())
+					var stderrLinuxUsers bytes.Buffer
+					applyLinuxUsersCmd.Stderr = &stderrLinuxUsers
+					
+					err = applyLinuxUsersCmd.Run()
+					linuxUsersSuccess := err == nil
+					
+					applyLinuxPermsCmd := exec.Command("kubectl", "apply", "-f", linuxPermsTempFile.Name())
+					var stderrLinuxPerms bytes.Buffer
+					applyLinuxPermsCmd.Stderr = &stderrLinuxPerms
+					
+					err = applyLinuxPermsCmd.Run()
+					linuxPermsSuccess := err == nil
+					
+					applyDockerContainersCmd := exec.Command("kubectl", "apply", "-f", dockerContainersTempFile.Name())
+					var stderrDockerContainers bytes.Buffer
+					applyDockerContainersCmd.Stderr = &stderrDockerContainers
+					
+					err = applyDockerContainersCmd.Run()
+					dockerContainersSuccess := err == nil
+					
+					applyK8sDeploymentCmd := exec.Command("kubectl", "apply", "-f", k8sDeploymentTempFile.Name())
+					var stderrK8sDeployment bytes.Buffer
+					applyK8sDeploymentCmd.Stderr = &stderrK8sDeployment
+					
+					err = applyK8sDeploymentCmd.Run()
+					k8sDeploymentSuccess := err == nil
+					
 					bar.Finish()
 					
 					if !linuxSuccess {
@@ -1603,7 +2163,29 @@ Por padrão, o deployment embutido no binário é utilizado.`,
 						fmt.Println("   A infraestrutura básica foi aplicada, mas sem o template de laboratório Docker.")
 					}
 					
-					if linuxSuccess && k8sSuccess && dockerSuccess {
+					if !linuxUsersSuccess {
+						fmt.Fprintf(os.Stderr, "❌ Erro ao aplicar o template de Usuários Linux: %v\n", err)
+						fmt.Println("   Detalhes técnicos:", stderrLinuxUsers.String())
+					}
+					
+					if !linuxPermsSuccess {
+						fmt.Fprintf(os.Stderr, "❌ Erro ao aplicar o template de Permissões Linux: %v\n", err)
+						fmt.Println("   Detalhes técnicos:", stderrLinuxPerms.String())
+					}
+					
+					if !dockerContainersSuccess {
+						fmt.Fprintf(os.Stderr, "❌ Erro ao aplicar o template de Containers Docker: %v\n", err)
+						fmt.Println("   Detalhes técnicos:", stderrDockerContainers.String())
+					}
+					
+					if !k8sDeploymentSuccess {
+						fmt.Fprintf(os.Stderr, "❌ Erro ao aplicar o template de Deployment Kubernetes: %v\n", err)
+						fmt.Println("   Detalhes técnicos:", stderrK8sDeployment.String())
+					}
+					
+					if linuxSuccess && k8sSuccess && dockerSuccess && 
+					   linuxUsersSuccess && linuxPermsSuccess && 
+					   dockerContainersSuccess && k8sDeploymentSuccess {
 						fmt.Println("✅ Todos os templates de laboratório aplicados com sucesso!")
 						
 						// Verificação de diagnóstico para confirmar que os templates estão visíveis
@@ -1805,6 +2387,55 @@ func addLabFromFile(labFile string, verboseMode bool) {
 		fmt.Fprintf(os.Stderr, "❌ O arquivo não é um manifesto de laboratório válido\n")
 		fmt.Println("   O arquivo deve ser um ConfigMap com a label 'app: girus-lab-template'")
 		os.Exit(1)
+	}
+	
+	// Verificar se está instalando o lab do Docker e se o Docker está disponível
+	if strings.Contains(fileContent, "docker-basics") {
+		fmt.Println("🐳 Detectado laboratório de Docker, verificando dependências...")
+		
+		// Verificar se o Docker está instalado
+		dockerCmd := exec.Command("docker", "--version")
+		dockerInstalled := dockerCmd.Run() == nil
+		
+		// Verificar se o serviço está rodando
+		dockerRunning := false
+		if dockerInstalled {
+			infoCmd := exec.Command("docker", "info")
+			dockerRunning = infoCmd.Run() == nil
+		}
+		
+		if !dockerInstalled || !dockerRunning {
+			fmt.Println("⚠️  Aviso: Docker não está instalado ou não está em execução")
+			fmt.Println("   O laboratório de Docker será instalado, mas requer Docker para funcionar corretamente.")
+			fmt.Println("   Para instalar o Docker:")
+			
+			if runtime.GOOS == "darwin" {
+				fmt.Println("\n   📦 macOS (via Colima):")
+				fmt.Println("      brew install colima docker")
+				fmt.Println("      colima start")
+			} else if runtime.GOOS == "linux" {
+				fmt.Println("\n   📦 Linux:")
+				fmt.Println("      curl -fsSL https://get.docker.com | bash")
+				fmt.Println("      sudo usermod -aG docker $USER")
+				fmt.Println("      sudo systemctl start docker")
+			} else {
+				fmt.Println("\n   📦 Visite: https://www.docker.com/products/docker-desktop")
+			}
+			
+			fmt.Println("\n   Você deseja continuar com a instalação do template? [s/N]")
+			reader := bufio.NewReader(os.Stdin)
+			response, _ := reader.ReadString('\n')
+			response = strings.ToLower(strings.TrimSpace(response))
+			
+			if response != "s" && response != "sim" && response != "y" && response != "yes" {
+				fmt.Println("Instalação cancelada.")
+				os.Exit(0)
+			}
+			
+			fmt.Println("Continuando com a instalação do template Docker...")
+		} else {
+			fmt.Println("✅ Docker detectado e funcionando")
+		}
 	}
 
 	fmt.Printf("📦 Processando laboratório: %s\n", labFile)
