@@ -223,12 +223,11 @@ data:
     duration: 60m
     image: "linuxtips/girus-devops:0.1"
     youtubeVideo: "https://www.youtube.com/watch?v=0cDj7citEjE"
+    privileged: true
     tasks:
       - name: "Explorando o Ambiente Docker"
         description: "Aprenda a verificar o ambiente Docker e seus componentes básicos"
         steps:
-          - "Inicie o Docker:"
-          - "` + "`" + `sudo inicia-docker` + "`" + `"
           - "Verifique a versão do Docker instalada:"
           - "` + "`" + `docker --version` + "`" + `"
           - "Verifique informações detalhadas sobre a instalação do Docker:"
@@ -237,8 +236,6 @@ data:
           - "` + "`" + `docker images` + "`" + `"
           - "Liste todos os containers (incluindo os parados):"
           - "` + "`" + `docker ps -a` + "`" + `"
-          - "Verifique o status do serviço Docker:"
-          - "` + "`" + `systemctl status docker` + "`" + `"
           - "Verifique as redes Docker disponíveis:"
           - "` + "`" + `docker network ls` + "`" + `"
         tips:
@@ -499,12 +496,11 @@ data:
     description: "Aprenda a gerenciar o ciclo de vida de containers Docker: criação, listagem e remoção"
     duration: 45m
     image: "linuxtips/girus-devops:0.1"
+    privileged: true
     tasks:
       - name: "Criando Containers Docker"
         description: "Aprenda a criar containers com diferentes configurações"
         steps:
-          - "Inicie o Docker:"
-          - "` + "`" + `sudo inicia-docker` + "`" + `"
           - "Verifique se o Docker está em execução:"
           - "` + "`" + `docker info` + "`" + `"
           - "Crie um container simples do Nginx:"
