@@ -9,7 +9,7 @@ cat << "EOF"
   ╚██████╔╝██║██║  ██║╚██████╔╝███████║
    ╚═════╝ ╚═╝╚═╝  ╚═╝ ╚═════╝ ╚══════╝
 EOF
-echo -e "\nScript de Instalação - Versão 0.1.0\n"
+echo -e "\nScript de Instalação - Versão 0.1.0 - Codename: Maracatu\n"
 
 # Verificar se o terminal é interativo
 IS_INTERACTIVE=0

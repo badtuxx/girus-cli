@@ -39,7 +39,7 @@ data:
     name: linux-basics
     title: "Introdução ao Linux"
     description: "Laboratório básico para praticar comandos Linux essenciais e conceitos fundamentais"
-    duration: 30m
+    duration: 10m
     image: "linuxtips/girus-devops:0.1"
     tasks:
       - name: "Navegação básica"
@@ -132,7 +132,7 @@ data:
     name: kubernetes-basics
     title: "Fundamentos de Kubernetes"
     description: "Aprenda comandos básicos do Kubernetes para gerenciar recursos em um cluster"
-    duration: 60m
+    duration: 15m
     image: "linuxtips/girus-kind-single-node:0.1"
     tasks:
       - name: "Explorando o Cluster"
@@ -220,7 +220,9 @@ data:
     name: docker-basics
     title: "Fundamentos de Docker"
     description: "Aprenda comandos básicos do Docker para criar, gerenciar e executar containers"
-    duration: 60m
+    duration: 15m
+    timerEnabled: true
+    maxDuration: 15m
     image: "linuxtips/girus-devops:0.1"
     youtubeVideo: "https://www.youtube.com/watch?v=0cDj7citEjE"
     privileged: true
@@ -298,7 +300,9 @@ data:
     name: linux-users-admin
     title: "Administrando Usuários no Linux"
     description: "Aprenda a criar, modificar e gerenciar contas de usuários e grupos no Linux"
-    duration: 45m
+    duration: 10m
+    timerEnabled: true
+    maxDuration: 10m
     image: "linuxtips/girus-devops:0.1"
     tasks:
       - name: "Gerenciamento de Usuários"
@@ -374,7 +378,7 @@ data:
     name: linux-file-permissions
     title: "Permissões de Arquivos no Linux"
     description: "Aprenda a visualizar e modificar permissões de arquivos e diretórios no Linux"
-    duration: 40m
+    duration: 15m
     image: "linuxtips/girus-devops:0.1"
     youtubeVideo: "https://www.youtube.com/watch?v=tT69ipXOzfc"
     tasks:
@@ -494,7 +498,7 @@ data:
     name: docker-containers-management
     title: "Criando, Listando e Removendo Containers"
     description: "Aprenda a gerenciar o ciclo de vida de containers Docker: criação, listagem e remoção"
-    duration: 45m
+    duration: 20m
     image: "linuxtips/girus-devops:0.1"
     privileged: true
     tasks:
@@ -510,7 +514,7 @@ data:
           - "Crie um container com variáveis de ambiente:"
           - "` + "`" + `docker run --name env-test -e MINHA_VAR=test -d alpine sh -c 'while true; do sleep 10; done'` + "`" + `"
           - "Crie um container com limite de recursos:"
-          - "` + "`" + `docker run --name limited-resources -d --memory=100m --cpus=0.5 nginx` + "`" + `"
+          - "` + "`" + `docker run --name limited-resources -d --memory=100m --cpus=0.2 nginx` + "`" + `"
           - "Crie um container efêmero (que se auto-remove):"
           - "` + "`" + `docker run --rm alpine echo \"Este container será removido automaticamente\"` + "`" + `"
         tips:
@@ -609,7 +613,9 @@ data:
     name: k8s-nginx-deployment
     title: "Deployment Nginx no Kubernetes"
     description: "Aprenda a criar um deployment do Nginx e verificar os detalhes dos pods no Kubernetes"
-    duration: 45m
+    duration: 15m
+    timerEnabled: true
+    maxDuration: 15m
     image: "linuxtips/girus-kind-single-node:0.1"
     youtubeVideo: "https://www.youtube.com/watch?v=sU235yW6QJM"
     tasks:
@@ -654,11 +660,11 @@ data:
                     - containerPort: 80
                     resources:
                       limits:
-                        cpu: "0.5"
-                        memory: "256Mi"
+                        cpu: "0.3"
+                        memory: "128Mi"
                       requests:
                         cpu: "0.1"
-                        memory: "128Mi"
+                        memory: "64Mi"
             ` + "```" + `
           - "Aplique o arquivo YAML:"
           - "` + "`" + `kubectl apply -f deployment.yaml` + "`" + `"
@@ -693,12 +699,6 @@ data:
           - "Dentro do container, verifique se o Nginx está respondendo:"
           - "` + "`" + `curl localhost:80` + "`" + `"
           - "Saia do shell com o comando 'exit'"
-          - "Encaminhe a porta do pod para o seu computador local:"
-          - "` + "`" + `kubectl port-forward $POD_NAME 8080:80 -n nginx-example &` + "`" + `"
-          - "Agora você pode acessar o Nginx em localhost:8080 (use curl):"
-          - "` + "`" + `curl localhost:8080` + "`" + `"
-          - "Encerre o processo de port-forward:"
-          - "` + "`" + `pkill -f \"port-forward\"` + "`" + `"
         tips:
           - type: "tip"
             title: "Filtrar pods por label"
