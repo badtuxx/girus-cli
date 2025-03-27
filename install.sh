@@ -223,7 +223,7 @@ install_kubectl() {
 
 # Função para verificar se o Docker está em execução
 check_docker_running(){
-    if docker info &> /dev/null && sudo docker info &> /dev/null; then        
+    if sudo docker info &> /dev/null; then        
         return 0
     fi
 
