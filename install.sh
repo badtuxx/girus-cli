@@ -413,8 +413,11 @@ else
                 sudo systemctl start docker
                 # Verificar novamente
                 if ! docker info &> /dev/null; then
-                    echo "❌ Falha ao iniciar o Docker. Por favor, inicie manualmente com 'sudo systemctl start docker'"
-                    exit 1
+                    # Tentativa utilizando SUDO
+                    if ! sudo docker info &> /dev/null; then
+                        echo "❌ Falha ao iniciar o Docker. Por favor, inicie manualmente com 'sudo systemctl start docker'"
+                        exit 1
+                    fi
                 fi
             else
                 echo "No macOS/Windows, inicie o Docker Desktop manualmente e execute este script novamente."
