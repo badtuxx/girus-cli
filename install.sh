@@ -27,8 +27,7 @@ ask_user() {
     local variable_name="$3"
     
     # Modo sempre interativo - perguntar ao usuário
-    echo -n "$prompt: "
-    read response
+    read -p "$prompt" response
     # Se resposta for vazia, usar o padrão
     response=${response:-$default}
     
