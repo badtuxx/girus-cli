@@ -223,12 +223,12 @@ install_kubectl() {
 }
 
 # Função para verificar se o Docker está em execução
-check_docker_running() {
-    if docker info &> /dev/null; then
+check_docker_running(){
+    if docker info &> /dev/null && sudo docker info &> /dev/null; then        
         return 0
-    else
-        return 1
     fi
+
+    return 1
 }
 
 # Verificar se o Girus CLI está no PATH
@@ -403,7 +403,7 @@ if ! command -v docker &> /dev/null; then
     fi
 else
     # Verificar se o Docker está em execução
-    if ! docker info &> /dev/null; then
+    if ! check_docker_running; then
         echo "⚠️ Aviso: Docker está instalado, mas não está em execução."
         ask_user "Deseja tentar iniciar o Docker? (S/n): " "S" "START_DOCKER"
         
@@ -412,12 +412,9 @@ else
             if [ "$OS" == "linux" ]; then
                 sudo systemctl start docker
                 # Verificar novamente
-                if ! docker info &> /dev/null; then
-                    # Tentativa utilizando SUDO
-                    if ! sudo docker info &> /dev/null; then
-                        echo "❌ Falha ao iniciar o Docker. Por favor, inicie manualmente com 'sudo systemctl start docker'"
-                        exit 1
-                    fi
+                if ! check_docker_running; then                                        
+                    echo "❌ Falha ao iniciar o Docker. Por favor, inicie manualmente com 'sudo systemctl start docker'"
+                    exit 1                    
                 fi
             else
                 echo "No macOS/Windows, inicie o Docker Desktop manualmente e execute este script novamente."
