@@ -231,7 +231,7 @@ O GIRUS oferece uma variedade de laboratórios em diferentes áreas tecnológica
 
 2. **Clone o Repositório**:
    ```bash
-   git clone https://github.com/linuxtips/girus.git
+   git clone https://github.com/badtuxx/girus-cli.git
    cd girus/girus-cli
    ```
 
@@ -330,7 +330,7 @@ O GIRUS é um projeto open-source que depende da contribuição da comunidade pa
 - Artigos sobre o uso e benefícios da plataforma
 
 ### Processo de Contribuição
-1. Fork o repositório em [GitHub](https://github.com/badtuxx/girus)
+1. Fork o repositório em [GitHub](https://github.com/badtuxx/girus-cli)
 2. Crie uma branch para sua feature (`git checkout -b feature/nova-funcionalidade`)
 3. Faça suas alterações e commit (`git commit -m 'Adiciona nova funcionalidade'`)
 4. Push para a branch (`git push origin feature/nova-funcionalidade`)
@@ -356,8 +356,8 @@ O projeto GIRUS tem um plano de desenvolvimento contínuo com os seguintes objet
 
 O projeto GIRUS oferece diferentes canais para suporte e comunicação:
 
-- **GitHub Issues**: [github.com/badtuxx/girus/issues](https://github.com/linuxtips/girus/issues)
-- **GitHub Discussions**: [github.com/badtuxx/girus/discussions](https://github.com/linuxtips/girus/discussions)
+- **GitHub Issues**: [github.com/badtuxx/girus-cli/issues](https://github.com/badtuxx/girus-cli/issues)
+- **GitHub Discussions**: [github.com/badtuxx/girus-cli/discussions](https://github.com/badtuxx/girus-cli/discussions)
 - **Discord da Comunidade**: [discord.gg/linuxtips](https://discord.gg/linuxtips)
 
 ## Licença e Atribuição
