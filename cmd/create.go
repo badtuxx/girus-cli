@@ -17,11 +17,11 @@ import (
 )
 
 var (
-	deployFile     string
-	clusterName    string
-	verboseMode    bool
+	deployFile      string
+	clusterName     string
+	verboseMode     bool
 	useExternalFile bool
-	labFile        string
+	labFile         string
 	skipPortForward bool
 	skipBrowser     bool
 )
@@ -139,7 +139,7 @@ data:
         description: "Aprenda a verificar os componentes básicos de um cluster Kubernetes"
         steps:
           - "Verifique se o kubectl está instalado:"
-          - "` + "`" + `kubectl --version` + "`" + `"
+          - "` + "`" + `kubectl version` + "`" + `"
           - "Verifique os nós do cluster executando:"
           - "` + "`" + `kubectl get nodes` + "`" + `"
           - "Veja informações mais detalhadas sobre os nós:"
@@ -1033,7 +1033,7 @@ roleRef:
 // waitForPodsReady espera até que os pods do Girus (backend e frontend) estejam prontos
 func waitForPodsReady(namespace string, timeout time.Duration) error {
 	fmt.Println("\nAguardando os pods do Girus inicializarem...")
-	
+
 	start := time.Now()
 	bar := progressbar.NewOptions(100,
 		progressbar.OptionSetDescription("Inicializando Girus..."),
@@ -1050,7 +1050,7 @@ func waitForPodsReady(namespace string, timeout time.Duration) error {
 	frontendReady := false
 	backendMessage := ""
 	frontendMessage := ""
-	
+
 	for {
 		if time.Since(start) > timeout {
 			bar.Finish()
@@ -1096,7 +1096,7 @@ func waitForPodsReady(namespace string, timeout time.Duration) error {
 				time.Sleep(500 * time.Millisecond)
 				continue
 			}
-			
+
 			bar.Finish()
 			fmt.Println("\n✅ Backend: Pronto")
 			fmt.Println("✅ Frontend: Pronto")
@@ -1115,47 +1115,47 @@ func getPodStatus(namespace, selector string) (bool, string, error) {
 	cmd := exec.Command("kubectl", "get", "pods", "-n", namespace, "-l", selector, "-o", "jsonpath={.items[0].metadata.name}")
 	var out bytes.Buffer
 	cmd.Stdout = &out
-	
+
 	err := cmd.Run()
 	if err != nil {
 		return false, "Pod não encontrado", err
 	}
-	
+
 	podName := strings.TrimSpace(out.String())
 	if podName == "" {
 		return false, "Pod ainda não criado", nil
 	}
-	
+
 	// Verificar a fase atual do pod
 	phaseCmd := exec.Command("kubectl", "get", "pod", podName, "-n", namespace, "-o", "jsonpath={.status.phase}")
 	var phaseOut bytes.Buffer
 	phaseCmd.Stdout = &phaseOut
-	
+
 	err = phaseCmd.Run()
 	if err != nil {
 		return false, "Erro ao verificar status", err
 	}
-	
+
 	phase := strings.TrimSpace(phaseOut.String())
 	if phase != "Running" {
 		return false, fmt.Sprintf("Status: %s", phase), nil
 	}
-	
+
 	// Verificar se todos os containers estão prontos
 	readyCmd := exec.Command("kubectl", "get", "pod", podName, "-n", namespace, "-o", "jsonpath={.status.conditions[?(@.type=='Ready')].status}")
 	var readyOut bytes.Buffer
 	readyCmd.Stdout = &readyOut
-	
+
 	err = readyCmd.Run()
 	if err != nil {
 		return false, "Erro ao verificar prontidão", err
 	}
-	
+
 	readyStatus := strings.TrimSpace(readyOut.String())
 	if readyStatus != "True" {
 		return false, "Containers inicializando", nil
 	}
-	
+
 	return true, "Pronto", nil
 }
 
@@ -1165,31 +1165,31 @@ func checkHealthEndpoint() (bool, error) {
 	cmd := exec.Command("kubectl", "get", "svc", "-n", "girus", "girus-backend", "-o", "jsonpath={.spec.ports[0].nodePort}")
 	var out bytes.Buffer
 	cmd.Stdout = &out
-	
+
 	err := cmd.Run()
 	if err != nil {
 		// Tentar verificar diretamente o endpoint interno se não encontrarmos o NodePort
 		healthCmd := exec.Command("kubectl", "exec", "-n", "girus", "deploy/girus-backend", "--", "wget", "-q", "-O-", "-T", "2", "http://localhost:8080/api/v1/health")
 		return healthCmd.Run() == nil, nil
 	}
-	
+
 	nodePort := strings.TrimSpace(out.String())
 	if nodePort == "" {
 		// Porta não encontrada, tentar verificar o serviço internamente
 		healthCmd := exec.Command("kubectl", "exec", "-n", "girus", "deploy/girus-backend", "--", "wget", "-q", "-O-", "-T", "2", "http://localhost:8080/api/v1/health")
 		return healthCmd.Run() == nil, nil
 	}
-	
+
 	// Tentar acessar via NodePort
 	healthCmd := exec.Command("curl", "-s", "-o", "/dev/null", "-w", "%{http_code}", fmt.Sprintf("http://localhost:%s/api/v1/health", nodePort))
 	var healthOut bytes.Buffer
 	healthCmd.Stdout = &healthOut
-	
+
 	err = healthCmd.Run()
 	if err != nil {
 		return false, err
 	}
-	
+
 	statusCode := strings.TrimSpace(healthOut.String())
 	return statusCode == "200", nil
 }
@@ -1200,7 +1200,7 @@ func setupPortForward(namespace string) error {
 	fmt.Println("   Limpando port-forwards existentes...")
 	exec.Command("bash", "-c", "pkill -f 'kubectl.*port-forward.*girus' || true").Run()
 	time.Sleep(1 * time.Second)
-	
+
 	// Port-forward do backend em background
 	fmt.Println("   Configurando port-forward para o backend (8080)...")
 	backendCmd := fmt.Sprintf("kubectl port-forward -n %s svc/girus-backend 8080:8080 --address 0.0.0.0 > /dev/null 2>&1 &", namespace)
@@ -1208,7 +1208,7 @@ func setupPortForward(namespace string) error {
 	if err != nil {
 		return fmt.Errorf("erro ao iniciar port-forward do backend: %v", err)
 	}
-	
+
 	// Verificar conectividade do backend
 	fmt.Println("   Verificando conectividade do backend...")
 	backendOK := false
@@ -1223,21 +1223,21 @@ func setupPortForward(namespace string) error {
 			time.Sleep(1 * time.Second)
 		}
 	}
-	
+
 	if !backendOK {
 		return fmt.Errorf("não foi possível conectar ao backend")
 	}
-	
+
 	fmt.Println("   ✅ Backend conectado com sucesso!")
-	
+
 	// ------------------------------------------------------------------------
 	// Port-forward do frontend - ABORDAGEM MAIS SIMPLES E DIRETA
 	// ------------------------------------------------------------------------
 	fmt.Println("   Configurando port-forward para o frontend (8000)...")
-	
+
 	// Método 1: Execução direta via bash para o frontend
 	frontendSuccess := false
-	
+
 	// Criar um script temporário para garantir execução correta
 	scriptContent := `#!/bin/bash
 # Mata qualquer processo existente na porta 8000
@@ -1247,31 +1247,31 @@ sleep 1
 nohup kubectl port-forward -n NAMESPACE svc/girus-frontend 8000:80 --address 192.168.4.69> /dev/null 2>&1 &
 echo $!  # Retorna o PID
 `
-	
+
 	// Substituir NAMESPACE pelo namespace real
 	scriptContent = strings.Replace(scriptContent, "NAMESPACE", namespace, 1)
-	
+
 	// Salvar em arquivo temporário
 	tmpFile := filepath.Join(os.TempDir(), "girus_frontend_portforward.sh")
 	os.WriteFile(tmpFile, []byte(scriptContent), 0755)
 	defer os.Remove(tmpFile)
-	
+
 	// Executar o script
 	fmt.Println("   Iniciando port-forward via script auxiliar...")
 	cmdOutput, err := exec.Command("bash", tmpFile).Output()
 	if err == nil {
 		pid := strings.TrimSpace(string(cmdOutput))
 		fmt.Println("   Port-forward iniciado com PID:", pid)
-		
+
 		// Aguardar o port-forward inicializar
 		time.Sleep(2 * time.Second)
-		
+
 		// Verificar conectividade
 		for i := 0; i < 5; i++ {
 			checkCmd := exec.Command("curl", "-s", "--max-time", "2", "-o", "/dev/null", "-w", "%{http_code}", "http://192.168.4.69:8000")
 			var out bytes.Buffer
 			checkCmd.Stdout = &out
-			
+
 			if err := checkCmd.Run(); err == nil {
 				statusCode := strings.TrimSpace(out.String())
 				if statusCode == "200" || statusCode == "301" || statusCode == "302" {
@@ -1279,35 +1279,35 @@ echo $!  # Retorna o PID
 					break
 				}
 			}
-			
+
 			fmt.Println("   Verificação", i+1, "falhou, aguardando...")
 			time.Sleep(2 * time.Second)
 		}
 	}
-	
+
 	// Se falhou, tentar um método alternativo como último recurso
 	if !frontendSuccess {
 		fmt.Println("   ⚠️ Tentando método alternativo direto...")
-		
+
 		// Método direto: executar o comando diretamente
 		cmd := exec.Command("kubectl", "port-forward", "-n", namespace, "svc/girus-frontend", "8000:80", "--address", "0.0.0.0/0")
-		
+
 		// Redirecionar saída para /dev/null
 		devNull, _ := os.Open(os.DevNull)
 		defer devNull.Close()
 		cmd.Stdout = devNull
 		cmd.Stderr = devNull
-		
+
 		// Iniciar em background - compatível com múltiplos sistemas operacionais
 		startBackgroundCmd(cmd)
-		
+
 		// Verificar conectividade
 		time.Sleep(3 * time.Second)
 		for i := 0; i < 3; i++ {
 			checkCmd := exec.Command("curl", "-s", "--max-time", "2", "-o", "/dev/null", "-w", "%{http_code}", "http://192.168.4.69:8000")
 			var out bytes.Buffer
 			checkCmd.Stdout = &out
-			
+
 			if err := checkCmd.Run(); err == nil {
 				statusCode := strings.TrimSpace(out.String())
 				if statusCode == "200" || statusCode == "301" || statusCode == "302" {
@@ -1318,20 +1318,20 @@ echo $!  # Retorna o PID
 			time.Sleep(1 * time.Second)
 		}
 	}
-	
+
 	// Último recurso - método absolutamente direto com deployment em vez de service
 	if !frontendSuccess {
 		fmt.Println("   🔄 Último recurso: port-forward ao deployment...")
 		// Método com deployment em vez de service, que pode ser mais estável
 		finalCmd := fmt.Sprintf("kubectl port-forward -n %s deployment/girus-frontend 8000:80 --address 192.168.4.69 > /dev/null 2>&1 &", namespace)
 		exec.Command("bash", "-c", finalCmd).Run()
-		
+
 		// Verificação final
 		time.Sleep(3 * time.Second)
 		checkCmd := exec.Command("curl", "-s", "--max-time", "2", "-o", "/dev/null", "-w", "%{http_code}", "http://192.168.4.69:8000")
 		var out bytes.Buffer
 		checkCmd.Stdout = &out
-		
+
 		if checkCmd.Run() == nil {
 			statusCode := strings.TrimSpace(out.String())
 			if statusCode == "200" || statusCode == "301" || statusCode == "302" {
@@ -1339,12 +1339,12 @@ echo $!  # Retorna o PID
 			}
 		}
 	}
-	
+
 	// Verificar status final e retornar
 	if !frontendSuccess {
 		return fmt.Errorf("não foi possível estabelecer port-forward para o frontend após múltiplas tentativas")
 	}
-	
+
 	fmt.Println("   ✅ Frontend conectado com sucesso!")
 	return nil
 }
@@ -1353,7 +1353,7 @@ echo $!  # Retorna o PID
 func startBackgroundCmd(cmd *exec.Cmd) error {
 	// Iniciar o processo sem depender de atributos específicos da plataforma
 	// que podem não estar disponíveis em todas as implementações do Go
-	
+
 	// Redirecionar saída e erro para /dev/null ou nul (Windows)
 	devNull, _ := os.Open(os.DevNull)
 	if devNull != nil {
@@ -1361,30 +1361,30 @@ func startBackgroundCmd(cmd *exec.Cmd) error {
 		cmd.Stderr = devNull
 		defer devNull.Close()
 	}
-	
+
 	// Iniciar o processo
 	err := cmd.Start()
 	if err != nil {
 		return err
 	}
-	
+
 	// Registrar o PID para referência
 	if cmd.Process != nil {
 		homeDir, _ := os.UserHomeDir()
 		if homeDir != "" {
 			pidDir := filepath.Join(homeDir, ".girus")
 			os.MkdirAll(pidDir, 0755)
-			ioutil.WriteFile(filepath.Join(pidDir, "frontend.pid"), 
+			ioutil.WriteFile(filepath.Join(pidDir, "frontend.pid"),
 				[]byte(fmt.Sprintf("%d", cmd.Process.Pid)), 0644)
 		}
-		
+
 		// Separar o processo do atual para evitar que seja terminado quando o processo pai terminar
 		// Isso é uma alternativa portable ao uso de Setpgid
 		go func() {
 			cmd.Process.Release()
 		}()
 	}
-	
+
 	return nil
 }
 
@@ -1432,7 +1432,7 @@ Por padrão, o deployment embutido no binário é utilizado.`,
 		if err := dockerCmd.Run(); err != nil {
 			fmt.Println("❌ Docker não encontrado ou não está em execução")
 			fmt.Println("\nO Docker é necessário para criar um cluster Kind. Instruções de instalação:")
-			
+
 			// Detectar o sistema operacional para instruções específicas
 			if runtime.GOOS == "darwin" {
 				// macOS
@@ -1459,16 +1459,16 @@ Por padrão, o deployment embutido no binário é utilizado.`,
 				// Windows ou outros sistemas
 				fmt.Println("\n📦 Visite https://www.docker.com/products/docker-desktop para instruções de instalação para seu sistema operacional")
 			}
-			
+
 			fmt.Println("\nApós instalar o Docker, execute novamente este comando.")
 			os.Exit(1)
 		}
-		
+
 		// Verificar se o serviço Docker está rodando
 		dockerInfoCmd := exec.Command("docker", "info")
 		if err := dockerInfoCmd.Run(); err != nil {
 			fmt.Println("❌ O serviço Docker não está em execução")
-			
+
 			if runtime.GOOS == "darwin" {
 				fmt.Println("\nPara macOS com Colima:")
 				fmt.Println("   colima start")
@@ -1480,21 +1480,21 @@ Por padrão, o deployment embutido no binário é utilizado.`,
 			} else {
 				fmt.Println("\nInicie o Docker Desktop ou o serviço Docker apropriado para seu sistema.")
 			}
-			
+
 			fmt.Println("\nApós iniciar o Docker, execute novamente este comando.")
 			os.Exit(1)
 		}
 
 		fmt.Println("✅ Docker detectado e funcionando")
-		
+
 		// Verificar silenciosamente se o cluster já existe
 		checkCmd := exec.Command("kind", "get", "clusters")
 		output, err := checkCmd.Output()
-		
+
 		// Ignorar erros na checagem, apenas assumimos que não há clusters
 		if err == nil {
 			clusters := strings.Split(strings.TrimSpace(string(output)), "\n")
-			
+
 			// Verificar se o cluster "girus" já existe
 			clusterExists := false
 			for _, cluster := range clusters {
@@ -1503,23 +1503,23 @@ Por padrão, o deployment embutido no binário é utilizado.`,
 					break
 				}
 			}
-			
+
 			if clusterExists {
 				fmt.Printf("⚠️  Cluster Girus já existe.\n")
 				fmt.Print("Deseja substituí-lo? [s/N]: ")
-				
+
 				reader := bufio.NewReader(os.Stdin)
 				response, _ := reader.ReadString('\n')
 				response = strings.ToLower(strings.TrimSpace(response))
-				
+
 				if response != "s" && response != "sim" && response != "y" && response != "yes" {
 					fmt.Println("Operação cancelada.")
 					return
 				}
-				
+
 				// Excluir o cluster existente
 				fmt.Printf("Excluindo cluster Girus existente...\n")
-				
+
 				deleteCmd := exec.Command("kind", "delete", "cluster", "--name", clusterName)
 				if verboseMode {
 					deleteCmd.Stdout = os.Stdout
@@ -1541,17 +1541,17 @@ Por padrão, o deployment embutido no binário é utilizado.`,
 						progressbar.OptionSpinnerType(14),
 						progressbar.OptionFullWidth(),
 					)
-					
+
 					var stderr bytes.Buffer
 					deleteCmd.Stderr = &stderr
-					
+
 					// Iniciar o comando
 					err := deleteCmd.Start()
 					if err != nil {
 						fmt.Fprintf(os.Stderr, "❌ Erro ao iniciar exclusão: %v\n", err)
 						os.Exit(1)
 					}
-					
+
 					// Atualizar a barra de progresso
 					done := make(chan struct{})
 					go func() {
@@ -1565,12 +1565,12 @@ Por padrão, o deployment embutido no binário é utilizado.`,
 							}
 						}
 					}()
-					
+
 					// Aguardar o final do comando
 					err = deleteCmd.Wait()
 					close(done)
 					bar.Finish()
-					
+
 					if err != nil {
 						fmt.Fprintf(os.Stderr, "❌ Erro ao excluir o cluster existente: %v\n", err)
 						fmt.Println("   Detalhes técnicos:", stderr.String())
@@ -1578,11 +1578,11 @@ Por padrão, o deployment embutido no binário é utilizado.`,
 						os.Exit(1)
 					}
 				}
-				
+
 				fmt.Println("✅ Cluster existente excluído com sucesso.")
 			}
 		}
-		
+
 		// Criar o cluster Kind
 		fmt.Println("🔄 Criando cluster Girus...")
 
@@ -1617,7 +1617,7 @@ Por padrão, o deployment embutido no binário é utilizado.`,
 			createClusterCmd := exec.Command("kind", "create", "cluster", "--name", clusterName)
 			var stderr bytes.Buffer
 			createClusterCmd.Stderr = &stderr
-			
+
 			// Iniciar o comando
 			err := createClusterCmd.Start()
 			if err != nil {
@@ -1646,10 +1646,10 @@ Por padrão, o deployment embutido no binário é utilizado.`,
 
 			if err != nil {
 				fmt.Fprintf(os.Stderr, "❌ Erro ao criar o cluster Girus: %v\n", err)
-				
+
 				// Traduzir mensagens de erro comuns
 				errMsg := stderr.String()
-				
+
 				if strings.Contains(errMsg, "node(s) already exist for a cluster with the name") {
 					fmt.Println("   Erro: Já existe um cluster com o nome 'girus' no sistema.")
 					fmt.Println("   Por favor, exclua-o primeiro com 'kind delete cluster --name girus'")
@@ -1661,7 +1661,7 @@ Por padrão, o deployment embutido no binário é utilizado.`,
 				} else {
 					fmt.Println("   Detalhes técnicos:", errMsg)
 				}
-				
+
 				os.Exit(1)
 			}
 		}
@@ -1674,14 +1674,14 @@ Por padrão, o deployment embutido no binário é utilizado.`,
 		// Verificar se existe o arquivo girus-kind-deploy.yaml
 		deployYamlPath := "girus-kind-deploy.yaml"
 		foundDeployFile := false
-		
+
 		// Verificar em diferentes locais possíveis
 		possiblePaths := []string{
-			deployYamlPath,                    // No diretório atual
+			deployYamlPath,                      // No diretório atual
 			filepath.Join("..", deployYamlPath), // Um nível acima
 			filepath.Join(os.Getenv("HOME"), "REPOS", "strigus", deployYamlPath), // Caminho comum
 		}
-		
+
 		for _, path := range possiblePaths {
 			if _, err := os.Stat(path); err == nil {
 				deployFile = path
@@ -1689,10 +1689,10 @@ Por padrão, o deployment embutido no binário é utilizado.`,
 				break
 			}
 		}
-		
+
 		if foundDeployFile {
 			fmt.Printf("🔍 Usando arquivo de deployment: %s\n", deployFile)
-			
+
 			// Aplicar arquivo de deployment completo (já contém o template do lab)
 			if verboseMode {
 				// Executar normalmente mostrando o output
@@ -1721,7 +1721,7 @@ Por padrão, o deployment embutido no binário é utilizado.`,
 				applyCmd := exec.Command("kubectl", "apply", "-f", deployFile)
 				var stderr bytes.Buffer
 				applyCmd.Stderr = &stderr
-				
+
 				// Iniciar o comando
 				err := applyCmd.Start()
 				if err != nil {
@@ -1754,12 +1754,12 @@ Por padrão, o deployment embutido no binário é utilizado.`,
 					os.Exit(1)
 				}
 			}
-			
+
 			fmt.Println("✅ Infraestrutura e template de laboratório aplicados com sucesso!")
 		} else {
 			// Usar o deployment embutido como fallback
 			// fmt.Println("⚠️  Arquivo girus-kind-deploy.yaml não encontrado, usando deployment embutido.")
-			
+
 			// Criar um arquivo temporário para o deployment principal
 			tempFile, err := os.CreateTemp("", "girus-deploy-*.yaml")
 			if err != nil {
@@ -1803,7 +1803,7 @@ Por padrão, o deployment embutido no binário é utilizado.`,
 				applyCmd := exec.Command("kubectl", "apply", "-f", tempFile.Name())
 				var stderr bytes.Buffer
 				applyCmd.Stderr = &stderr
-				
+
 				// Iniciar o comando
 				err := applyCmd.Start()
 				if err != nil {
@@ -1836,12 +1836,12 @@ Por padrão, o deployment embutido no binário é utilizado.`,
 					os.Exit(1)
 				}
 			}
-			
+
 			fmt.Println("✅ Infraestrutura básica aplicada com sucesso!")
-			
+
 			// Agora vamos aplicar o template de laboratório que está embutido no binário
 			fmt.Println("\n🔬 Aplicando templates de laboratório...")
-			
+
 			// Criar um arquivo temporário para o template do laboratório Linux
 			labTempFile, err := os.CreateTemp("", "basic-linux-*.yaml")
 			if err != nil {
@@ -1858,7 +1858,7 @@ Por padrão, o deployment embutido no binário é utilizado.`,
 				return
 			}
 			labTempFile.Close()
-			
+
 			// Criar um arquivo temporário para o template do laboratório Kubernetes
 			k8sTempFile, err := os.CreateTemp("", "kubernetes-basics-*.yaml")
 			if err != nil {
@@ -1875,7 +1875,7 @@ Por padrão, o deployment embutido no binário é utilizado.`,
 				return
 			}
 			k8sTempFile.Close()
-			
+
 			// Criar um arquivo temporário para o template do laboratório Docker
 			dockerTempFile, err := os.CreateTemp("", "docker-basics-*.yaml")
 			if err != nil {
@@ -1892,7 +1892,7 @@ Por padrão, o deployment embutido no binário é utilizado.`,
 				return
 			}
 			dockerTempFile.Close()
-			
+
 			// Criar um arquivo temporário para o template de Administração de Usuários Linux
 			linuxUsersTempFile, err := os.CreateTemp("", "linux-users-*.yaml")
 			if err != nil {
@@ -1909,7 +1909,7 @@ Por padrão, o deployment embutido no binário é utilizado.`,
 				return
 			}
 			linuxUsersTempFile.Close()
-			
+
 			// Criar um arquivo temporário para o template de Permissões de Arquivos Linux
 			linuxPermsTempFile, err := os.CreateTemp("", "linux-perms-*.yaml")
 			if err != nil {
@@ -1926,7 +1926,7 @@ Por padrão, o deployment embutido no binário é utilizado.`,
 				return
 			}
 			linuxPermsTempFile.Close()
-			
+
 			// Criar um arquivo temporário para o template de Gerenciamento de Containers Docker
 			dockerContainersTempFile, err := os.CreateTemp("", "docker-containers-*.yaml")
 			if err != nil {
@@ -1943,7 +1943,7 @@ Por padrão, o deployment embutido no binário é utilizado.`,
 				return
 			}
 			dockerContainersTempFile.Close()
-			
+
 			// Criar um arquivo temporário para o template de Deployment Kubernetes
 			k8sDeploymentTempFile, err := os.CreateTemp("", "k8s-deployment-*.yaml")
 			if err != nil {
@@ -1960,7 +1960,7 @@ Por padrão, o deployment embutido no binário é utilizado.`,
 				return
 			}
 			k8sDeploymentTempFile.Close()
-			
+
 			// Aplicar o template de laboratório Linux
 			if verboseMode {
 				// Executar normalmente mostrando o output
@@ -1975,7 +1975,7 @@ Por padrão, o deployment embutido no binário é utilizado.`,
 				} else {
 					fmt.Println("   ✅ Template de laboratório Linux Básico aplicado com sucesso!")
 				}
-				
+
 				// Aplicar o template de laboratório Kubernetes
 				fmt.Println("   Aplicando template de laboratório Kubernetes...")
 				applyK8sCmd := exec.Command("kubectl", "apply", "-f", k8sTempFile.Name())
@@ -1988,7 +1988,7 @@ Por padrão, o deployment embutido no binário é utilizado.`,
 				} else {
 					fmt.Println("   ✅ Template de laboratório Fundamentos de Kubernetes aplicado com sucesso!")
 				}
-				
+
 				// Aplicar o template de laboratório Docker
 				fmt.Println("   Aplicando template de laboratório Docker...")
 				applyDockerCmd := exec.Command("kubectl", "apply", "-f", dockerTempFile.Name())
@@ -2001,7 +2001,7 @@ Por padrão, o deployment embutido no binário é utilizado.`,
 				} else {
 					fmt.Println("   ✅ Template de laboratório Fundamentos de Docker aplicado com sucesso!")
 				}
-				
+
 				// Aplicar o template de Usuários Linux
 				fmt.Println("   Aplicando template de Administração de Usuários Linux...")
 				applyLinuxUsersCmd := exec.Command("kubectl", "apply", "-f", linuxUsersTempFile.Name())
@@ -2013,7 +2013,7 @@ Por padrão, o deployment embutido no binário é utilizado.`,
 				} else {
 					fmt.Println("   ✅ Template de Administração de Usuários Linux aplicado com sucesso!")
 				}
-				
+
 				// Aplicar o template de Permissões Linux
 				fmt.Println("   Aplicando template de Permissões de Arquivos Linux...")
 				applyLinuxPermsCmd := exec.Command("kubectl", "apply", "-f", linuxPermsTempFile.Name())
@@ -2025,7 +2025,7 @@ Por padrão, o deployment embutido no binário é utilizado.`,
 				} else {
 					fmt.Println("   ✅ Template de Permissões de Arquivos Linux aplicado com sucesso!")
 				}
-				
+
 				// Aplicar o template de Containers Docker
 				fmt.Println("   Aplicando template de Gerenciamento de Containers Docker...")
 				applyDockerContainersCmd := exec.Command("kubectl", "apply", "-f", dockerContainersTempFile.Name())
@@ -2037,7 +2037,7 @@ Por padrão, o deployment embutido no binário é utilizado.`,
 				} else {
 					fmt.Println("   ✅ Template de Gerenciamento de Containers Docker aplicado com sucesso!")
 				}
-				
+
 				// Aplicar o template de Deployment Kubernetes
 				fmt.Println("   Aplicando template de Deployment Nginx Kubernetes...")
 				applyK8sDeploymentCmd := exec.Command("kubectl", "apply", "-f", k8sDeploymentTempFile.Name())
@@ -2066,7 +2066,7 @@ Por padrão, o deployment embutido no binário é utilizado.`,
 				applyLabCmd := exec.Command("kubectl", "apply", "-f", labTempFile.Name())
 				var stderrLinux bytes.Buffer
 				applyLabCmd.Stderr = &stderrLinux
-				
+
 				// Iniciar o comando
 				err := applyLabCmd.Start()
 				if err != nil {
@@ -2091,108 +2091,108 @@ Por padrão, o deployment embutido no binário é utilizado.`,
 					// Aguardar o final do comando
 					err = applyLabCmd.Wait()
 					close(done)
-					
+
 					linuxSuccess := err == nil
-					
+
 					// Aplicar o template de Kubernetes
 					applyK8sCmd := exec.Command("kubectl", "apply", "-f", k8sTempFile.Name())
 					var stderrK8s bytes.Buffer
 					applyK8sCmd.Stderr = &stderrK8s
-					
+
 					err = applyK8sCmd.Run()
 					k8sSuccess := err == nil
-					
+
 					// Aplicar o template de Docker
 					applyDockerCmd := exec.Command("kubectl", "apply", "-f", dockerTempFile.Name())
 					var stderrDocker bytes.Buffer
 					applyDockerCmd.Stderr = &stderrDocker
-					
+
 					err = applyDockerCmd.Run()
 					dockerSuccess := err == nil
-					
+
 					// Aplicar os novos templates
 					applyLinuxUsersCmd := exec.Command("kubectl", "apply", "-f", linuxUsersTempFile.Name())
 					var stderrLinuxUsers bytes.Buffer
 					applyLinuxUsersCmd.Stderr = &stderrLinuxUsers
-					
+
 					err = applyLinuxUsersCmd.Run()
 					linuxUsersSuccess := err == nil
-					
+
 					applyLinuxPermsCmd := exec.Command("kubectl", "apply", "-f", linuxPermsTempFile.Name())
 					var stderrLinuxPerms bytes.Buffer
 					applyLinuxPermsCmd.Stderr = &stderrLinuxPerms
-					
+
 					err = applyLinuxPermsCmd.Run()
 					linuxPermsSuccess := err == nil
-					
+
 					applyDockerContainersCmd := exec.Command("kubectl", "apply", "-f", dockerContainersTempFile.Name())
 					var stderrDockerContainers bytes.Buffer
 					applyDockerContainersCmd.Stderr = &stderrDockerContainers
-					
+
 					err = applyDockerContainersCmd.Run()
 					dockerContainersSuccess := err == nil
-					
+
 					applyK8sDeploymentCmd := exec.Command("kubectl", "apply", "-f", k8sDeploymentTempFile.Name())
 					var stderrK8sDeployment bytes.Buffer
 					applyK8sDeploymentCmd.Stderr = &stderrK8sDeployment
-					
+
 					err = applyK8sDeploymentCmd.Run()
 					k8sDeploymentSuccess := err == nil
-					
+
 					bar.Finish()
-					
+
 					if !linuxSuccess {
 						fmt.Fprintf(os.Stderr, "❌ Erro ao aplicar o template de laboratório Linux: %v\n", err)
 						fmt.Println("   Detalhes técnicos:", stderrLinux.String())
 						fmt.Println("   A infraestrutura básica foi aplicada, mas sem o template de laboratório Linux.")
 					}
-					
+
 					if !k8sSuccess {
 						fmt.Fprintf(os.Stderr, "❌ Erro ao aplicar o template de laboratório Kubernetes: %v\n", err)
 						fmt.Println("   Detalhes técnicos:", stderrK8s.String())
 						fmt.Println("   A infraestrutura básica foi aplicada, mas sem o template de laboratório Kubernetes.")
 					}
-					
+
 					if !dockerSuccess {
 						fmt.Fprintf(os.Stderr, "❌ Erro ao aplicar o template de laboratório Docker: %v\n", err)
 						fmt.Println("   Detalhes técnicos:", stderrDocker.String())
 						fmt.Println("   A infraestrutura básica foi aplicada, mas sem o template de laboratório Docker.")
 					}
-					
+
 					if !linuxUsersSuccess {
 						fmt.Fprintf(os.Stderr, "❌ Erro ao aplicar o template de Usuários Linux: %v\n", err)
 						fmt.Println("   Detalhes técnicos:", stderrLinuxUsers.String())
 					}
-					
+
 					if !linuxPermsSuccess {
 						fmt.Fprintf(os.Stderr, "❌ Erro ao aplicar o template de Permissões Linux: %v\n", err)
 						fmt.Println("   Detalhes técnicos:", stderrLinuxPerms.String())
 					}
-					
+
 					if !dockerContainersSuccess {
 						fmt.Fprintf(os.Stderr, "❌ Erro ao aplicar o template de Containers Docker: %v\n", err)
 						fmt.Println("   Detalhes técnicos:", stderrDockerContainers.String())
 					}
-					
+
 					if !k8sDeploymentSuccess {
 						fmt.Fprintf(os.Stderr, "❌ Erro ao aplicar o template de Deployment Kubernetes: %v\n", err)
 						fmt.Println("   Detalhes técnicos:", stderrK8sDeployment.String())
 					}
-					
-					if linuxSuccess && k8sSuccess && dockerSuccess && 
-					   linuxUsersSuccess && linuxPermsSuccess && 
-					   dockerContainersSuccess && k8sDeploymentSuccess {
+
+					if linuxSuccess && k8sSuccess && dockerSuccess &&
+						linuxUsersSuccess && linuxPermsSuccess &&
+						dockerContainersSuccess && k8sDeploymentSuccess {
 						fmt.Println("✅ Todos os templates de laboratório aplicados com sucesso!")
-						
+
 						// Verificação de diagnóstico para confirmar que os templates estão visíveis
 						fmt.Println("\n🔍 Verificando templates de laboratório instalados:")
 						listLabsCmd := exec.Command("kubectl", "get", "configmap", "-n", "girus", "-l", "app=girus-lab-template", "-o", "custom-columns=NAME:.metadata.name")
-						
+
 						// Capturar output para apresentá-lo de forma mais organizada
 						var labsOutput bytes.Buffer
 						listLabsCmd.Stdout = &labsOutput
 						listLabsCmd.Stderr = &labsOutput
-						
+
 						if err := listLabsCmd.Run(); err == nil {
 							labs := strings.Split(strings.TrimSpace(labsOutput.String()), "\n")
 							if len(labs) > 1 { // Primeira linha é o cabeçalho "NAME"
@@ -2208,12 +2208,12 @@ Por padrão, o deployment embutido no binário é utilizado.`,
 						} else {
 							fmt.Println("   ⚠️ Não foi possível verificar os templates instalados")
 						}
-						
+
 						// Reiniciar o backend para carregar os templates
 						fmt.Println("\n🔄 Reiniciando o backend para carregar os templates...")
 						restartCmd := exec.Command("kubectl", "rollout", "restart", "deployment/girus-backend", "-n", "girus")
 						restartCmd.Run()
-						
+
 						// Aguardar o reinício completar
 						fmt.Println("   Aguardando o reinício do backend completar...")
 						waitCmd := exec.Command("kubectl", "rollout", "status", "deployment/girus-backend", "-n", "girus", "--timeout=60s")
@@ -2221,7 +2221,7 @@ Por padrão, o deployment embutido no binário é utilizado.`,
 						var waitOutput bytes.Buffer
 						waitCmd.Stdout = &waitOutput
 						waitCmd.Stderr = &waitOutput
-						
+
 						// Iniciar indicador de progresso simples
 						spinChars := []string{"⠋", "⠙", "⠹", "⠸", "⠼", "⠴", "⠦", "⠧", "⠇", "⠏"}
 						spinIdx := 0
@@ -2238,16 +2238,16 @@ Por padrão, o deployment embutido no binário é utilizado.`,
 								}
 							}
 						}()
-						
-						// Executar e aguardar 
+
+						// Executar e aguardar
 						waitCmd.Run()
 						close(done)
 						fmt.Println("\r   ✅ Backend reiniciado com sucesso!            ")
-						
+
 						// Aguardar mais alguns segundos para o backend inicializar completamente
 						fmt.Println("   Aguardando inicialização completa...")
 						time.Sleep(5 * time.Second)
-						
+
 					} else if linuxSuccess {
 						fmt.Println("✅ Template de laboratório Linux aplicado com sucesso!")
 					} else if k8sSuccess {
@@ -2272,7 +2272,7 @@ Por padrão, o deployment embutido no binário é utilizado.`,
 		// Configurar port-forward automaticamente (a menos que --skip-port-forward tenha sido especificado)
 		if !skipPortForward {
 			fmt.Print("\n🔌 Configurando acesso aos serviços do Girus... ")
-			
+
 			if err := setupPortForward("girus"); err != nil {
 				fmt.Println("⚠️")
 				fmt.Printf("Não foi possível configurar o acesso automático: %v\n", err)
@@ -2284,7 +2284,7 @@ Por padrão, o deployment embutido no binário é utilizado.`,
 				fmt.Println("Acesso configurado com sucesso!")
 				fmt.Println("📊 Backend: http://localhost:8080")
 				fmt.Println("🖥️  Frontend: http://192.168.4.69:8000")
-				
+
 				// Abrir o navegador se não foi especificado para pular
 				if !skipBrowser {
 					fmt.Println("\n🌐 Abrindo navegador com o Girus...")
@@ -2300,24 +2300,24 @@ Por padrão, o deployment embutido no binário é utilizado.`,
 			fmt.Println("kubectl port-forward -n girus svc/girus-backend 8080:8080 --address 0.0.0.0")
 			fmt.Println("kubectl port-forward -n girus svc/girus-frontend 8000:80 --address 192.168.4.69")
 		}
-		
+
 		// Exibir mensagem de conclusão
 		fmt.Println("\n" + strings.Repeat("─", 60))
 		fmt.Println("✅ GIRUS PRONTO PARA USO!")
 		fmt.Println(strings.Repeat("─", 60))
-		
+
 		// Exibir acesso ao navegador como próximo passo
 		fmt.Println("📋 PRÓXIMOS PASSOS:")
 		fmt.Println("  • Acesse o Girus no navegador:")
 		fmt.Println("    http://192.168.4.69:8000")
-		
+
 		// Instruções para laboratórios
 		fmt.Println("\n  • Para aplicar mais templates de laboratórios com o Girus:")
 		fmt.Println("    girus create lab -f caminho/para/lab.yaml")
-		
+
 		fmt.Println("\n  • Para ver todos os laboratórios disponíveis:")
 		fmt.Println("    girus list labs")
-		
+
 		fmt.Println(strings.Repeat("─", 60))
 	},
 }
@@ -2350,7 +2350,7 @@ func addLabFromFile(labFile string, verboseMode bool) {
 	}
 
 	fmt.Println("🔍 Verificando ambiente Girus...")
-	
+
 	// Verificar se há um cluster Girus ativo
 	checkCmd := exec.Command("kubectl", "get", "namespace", "girus", "--no-headers", "--ignore-not-found")
 	checkOutput, err := checkCmd.Output()
@@ -2384,27 +2384,27 @@ func addLabFromFile(labFile string, verboseMode bool) {
 		fmt.Println("   O arquivo deve ser um ConfigMap com a label 'app: girus-lab-template'")
 		os.Exit(1)
 	}
-	
+
 	// Verificar se está instalando o lab do Docker e se o Docker está disponível
 	if strings.Contains(fileContent, "docker-basics") {
 		fmt.Println("🐳 Detectado laboratório de Docker, verificando dependências...")
-		
+
 		// Verificar se o Docker está instalado
 		dockerCmd := exec.Command("docker", "--version")
 		dockerInstalled := dockerCmd.Run() == nil
-		
+
 		// Verificar se o serviço está rodando
 		dockerRunning := false
 		if dockerInstalled {
 			infoCmd := exec.Command("docker", "info")
 			dockerRunning = infoCmd.Run() == nil
 		}
-		
+
 		if !dockerInstalled || !dockerRunning {
 			fmt.Println("⚠️  Aviso: Docker não está instalado ou não está em execução")
 			fmt.Println("   O laboratório de Docker será instalado, mas requer Docker para funcionar corretamente.")
 			fmt.Println("   Para instalar o Docker:")
-			
+
 			if runtime.GOOS == "darwin" {
 				fmt.Println("\n   📦 macOS (via Colima):")
 				fmt.Println("      brew install colima docker")
@@ -2417,17 +2417,17 @@ func addLabFromFile(labFile string, verboseMode bool) {
 			} else {
 				fmt.Println("\n   📦 Visite: https://www.docker.com/products/docker-desktop")
 			}
-			
+
 			fmt.Println("\n   Você deseja continuar com a instalação do template? [s/N]")
 			reader := bufio.NewReader(os.Stdin)
 			response, _ := reader.ReadString('\n')
 			response = strings.ToLower(strings.TrimSpace(response))
-			
+
 			if response != "s" && response != "sim" && response != "y" && response != "yes" {
 				fmt.Println("Instalação cancelada.")
 				os.Exit(0)
 			}
-			
+
 			fmt.Println("Continuando com a instalação do template Docker...")
 		} else {
 			fmt.Println("✅ Docker detectado e funcionando")
@@ -2440,7 +2440,7 @@ func addLabFromFile(labFile string, verboseMode bool) {
 	if verboseMode {
 		fmt.Println("   Aplicando ConfigMap no cluster...")
 	}
-	
+
 	// Aplicar o ConfigMap no cluster
 	if verboseMode {
 		// Executar normalmente mostrando o output
@@ -2468,7 +2468,7 @@ func addLabFromFile(labFile string, verboseMode bool) {
 		applyCmd := exec.Command("kubectl", "apply", "-f", labFile)
 		var stderr bytes.Buffer
 		applyCmd.Stderr = &stderr
-		
+
 		// Iniciar o comando
 		err := applyCmd.Start()
 		if err != nil {
@@ -2516,7 +2516,7 @@ func addLabFromFile(labFile string, verboseMode bool) {
 			labID = strings.TrimSpace(parts[1])
 		}
 	}
-	
+
 	// Extrair também o título para exibição
 	var labTitle string
 	labTitleCmd := exec.Command("sh", "-c", fmt.Sprintf("grep -A10 'lab.yaml:' %s | grep 'title:' | head -1", labFile))
@@ -2529,9 +2529,9 @@ func addLabFromFile(labFile string, verboseMode bool) {
 			labTitle = strings.Trim(labTitle, "\"'")
 		}
 	}
-	
+
 	fmt.Println("\n🔄 Reiniciando backend para carregar o template...")
-	
+
 	// O backend apenas carrega os templates na inicialização
 	if verboseMode {
 		// Mostrar o output da reinicialização
@@ -2544,7 +2544,7 @@ func addLabFromFile(labFile string, verboseMode bool) {
 			fmt.Println("   O template foi aplicado, mas pode ser necessário reiniciar o backend manualmente:")
 			fmt.Println("   kubectl rollout restart deployment/girus-backend -n girus")
 		}
-		
+
 		// Aguardar o reinício completar
 		fmt.Println("   Aguardando o reinício do backend completar...")
 		waitCmd := exec.Command("kubectl", "rollout", "status", "deployment/girus-backend", "-n", "girus", "--timeout=60s")
@@ -2552,7 +2552,7 @@ func addLabFromFile(labFile string, verboseMode bool) {
 		var waitOutput bytes.Buffer
 		waitCmd.Stdout = &waitOutput
 		waitCmd.Stderr = &waitOutput
-		
+
 		// Iniciar indicador de progresso simples
 		spinChars := []string{"⠋", "⠙", "⠹", "⠸", "⠼", "⠴", "⠦", "⠧", "⠇", "⠏"}
 		spinIdx := 0
@@ -2569,8 +2569,8 @@ func addLabFromFile(labFile string, verboseMode bool) {
 				}
 			}
 		}()
-		
-		// Executar e aguardar 
+
+		// Executar e aguardar
 		waitCmd.Run()
 		close(done)
 		fmt.Println("\r   ✅ Backend reiniciado com sucesso!            ")
@@ -2586,12 +2586,12 @@ func addLabFromFile(labFile string, verboseMode bool) {
 			progressbar.OptionSpinnerType(14),
 			progressbar.OptionFullWidth(),
 		)
-		
+
 		// Reiniciar o deployment do backend
 		restartCmd := exec.Command("kubectl", "rollout", "restart", "deployment/girus-backend", "-n", "girus")
 		var stderr bytes.Buffer
 		restartCmd.Stderr = &stderr
-		
+
 		err := restartCmd.Run()
 		if err != nil {
 			bar.Finish()
@@ -2604,12 +2604,12 @@ func addLabFromFile(labFile string, verboseMode bool) {
 		} else {
 			// Aguardar o reinício completar
 			waitCmd := exec.Command("kubectl", "rollout", "status", "deployment/girus-backend", "-n", "girus", "--timeout=60s")
-			
+
 			// Redirecionar saída para não exibir detalhes do rollout
 			var waitOutput bytes.Buffer
 			waitCmd.Stdout = &waitOutput
 			waitCmd.Stderr = &waitOutput
-			
+
 			// Iniciar o comando
 			err = waitCmd.Start()
 			if err != nil {
@@ -2629,7 +2629,7 @@ func addLabFromFile(labFile string, verboseMode bool) {
 						}
 					}
 				}()
-				
+
 				// Aguardar o final do comando
 				waitCmd.Wait()
 				close(done)
@@ -2638,18 +2638,18 @@ func addLabFromFile(labFile string, verboseMode bool) {
 			bar.Finish()
 		}
 	}
-	
+
 	// Aguardar mais alguns segundos para que o backend reinicie completamente
 	fmt.Println("   Aguardando inicialização completa...")
 	time.Sleep(3 * time.Second)
-	
+
 	// Após reiniciar o backend, verificar se precisamos recriar o port-forward
 	portForwardStatus := checkPortForwardNeeded()
-	
+
 	// Se port-forward é necessário, configurá-lo corretamente
 	if portForwardStatus {
 		fmt.Println("\n🔌 Reconfigurando port-forwards após reinício do backend...")
-		
+
 		// Usar a função setupPortForward para garantir que ambos os serviços estejam acessíveis
 		err := setupPortForward("girus")
 		if err != nil {
@@ -2667,11 +2667,11 @@ func addLabFromFile(labFile string, verboseMode bool) {
 		checkCmd := exec.Command("curl", "-s", "--max-time", "1", "-o", "/dev/null", "-w", "%{http_code}", "http://192.168.4.69:8000")
 		var out bytes.Buffer
 		checkCmd.Stdout = &out
-		
+
 		if checkCmd.Run() != nil || !strings.Contains(strings.TrimSpace(out.String()), "200") {
 			fmt.Println("\n⚠️ Detectado problema na conexão com o frontend.")
 			fmt.Println("   Reconfigurando port-forwards para garantir acesso...")
-			
+
 			// Forçar reconfiguração de port-forwards
 			err := setupPortForward("girus")
 			if err != nil {
@@ -2682,13 +2682,13 @@ func addLabFromFile(labFile string, verboseMode bool) {
 			}
 		}
 	}
-	
+
 	// Desenhar uma linha separadora
 	fmt.Println("\n" + strings.Repeat("─", 60))
-	
+
 	// Exibir informações sobre o laboratório adicionado
 	fmt.Println("✅ LABORATÓRIO ADICIONADO COM SUCESSO!")
-	
+
 	if labTitle != "" && labID != "" {
 		fmt.Printf("\n📚 Título: %s\n", labTitle)
 		fmt.Printf("🏷️  ID: %s\n", labID)
@@ -2699,10 +2699,10 @@ func addLabFromFile(labFile string, verboseMode bool) {
 	fmt.Println("\n📋 PRÓXIMOS PASSOS:")
 	fmt.Println("  • Acesse o Girus no navegador para usar o novo laboratório:")
 	fmt.Println("    http://localhost:8000")
-	
+
 	fmt.Println("\n  • Para ver todos os laboratórios disponíveis via CLI:")
 	fmt.Println("    girus list labs")
-	
+
 	fmt.Println("\n  • Para verificar detalhes do template adicionado:")
 	if labID != "" {
 		fmt.Printf("    kubectl describe configmap -n girus | grep -A20 %s\n", labID)
@@ -2710,7 +2710,7 @@ func addLabFromFile(labFile string, verboseMode bool) {
 		fmt.Println("    kubectl get configmaps -n girus -l app=girus-lab-template")
 		fmt.Println("    kubectl describe configmap <nome-do-configmap> -n girus")
 	}
-	
+
 	// Linha final
 	fmt.Println(strings.Repeat("─", 60))
 }
@@ -2719,7 +2719,7 @@ func addLabFromFile(labFile string, verboseMode bool) {
 func checkPortForwardNeeded() bool {
 	backendNeeded := false
 	frontendNeeded := false
-	
+
 	// Verificar se a porta 8080 (backend) está em uso
 	backendPortCmd := exec.Command("lsof", "-i", ":8080")
 	if backendPortCmd.Run() != nil {
@@ -2738,7 +2738,7 @@ func checkPortForwardNeeded() bool {
 			backendNeeded = backendHealthCmd.Run() != nil // Retorna true (precisa de port-forward) se o comando falhar
 		}
 	}
-	
+
 	// Verificar se a porta 8000 (frontend) está em uso
 	frontendPortCmd := exec.Command("lsof", "-i", ":8000")
 	if frontendPortCmd.Run() != nil {
@@ -2764,7 +2764,7 @@ func checkPortForwardNeeded() bool {
 			}
 		}
 	}
-	
+
 	// Se qualquer um dos serviços precisar de port-forward, retorne true
 	return backendNeeded || frontendNeeded
 }
@@ -2785,4 +2785,4 @@ func init() {
 
 	// definir o nome do cluster como "girus" sempre
 	clusterName = "girus"
-} 
+}
