@@ -194,7 +194,7 @@ O GIRUS oferece uma variedade de laboratórios em diferentes áreas tecnológica
 ## Requisitos do Sistema
 
 - **Sistema Operacional**: Linux, macOS ou Windows com WSL2
-- **Docker**: Versão 20.10 ou superior (em execução)
+- **Docker**: Versão 20.10 ou superior (em execução) ou Podman 4.0 ou superior
 - **Memória**: Mínimo 4GB disponível
 - **Espaço em Disco**: Mínimo 5GB livre
 - **Conectividade**: Internet para download inicial das imagens
@@ -211,7 +211,7 @@ O GIRUS oferece uma variedade de laboratórios em diferentes áreas tecnológica
    ```
 
    Este script realiza as seguintes ações:
-   - Verifica a presença do Docker e sua execução
+   - Verifica a presença do Docker/Podman e sua execução
    - Instala Kind e kubectl se necessário
    - Compila e instala o GIRUS CLI
    - Configura as permissões adequadas
@@ -224,7 +224,7 @@ O GIRUS oferece uma variedade de laboratórios em diferentes áreas tecnológica
 ### Instalação Manual
 
 1. **Pré-requisitos**:
-   - Instale Docker seguindo as [instruções oficiais](https://docs.docker.com/engine/install/)
+   - Instale Docker seguindo as [instruções oficiais](https://docs.docker.com/engine/install/) ou Podman seguindo as [instruções oficiais](https://podman.io/docs/installation)
    - Instale Go a partir do [site oficial](https://golang.org/dl/)
    - Instale Kind seguindo as [instruções do projeto](https://kind.sigs.k8s.io/docs/user/quick-start/)
    - Instale kubectl seguindo a [documentação do Kubernetes](https://kubernetes.io/docs/tasks/tools/install-kubectl/)
