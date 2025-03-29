@@ -139,7 +139,7 @@ data:
         description: "Aprenda a verificar os componentes básicos de um cluster Kubernetes"
         steps:
           - "Verifique se o kubectl está instalado:"
-          - "` + "`" + `kubectl --version` + "`" + `"
+          - "` + "`" + `kubectl version` + "`" + `"
           - "Verifique os nós do cluster executando:"
           - "` + "`" + `kubectl get nodes` + "`" + `"
           - "Veja informações mais detalhadas sobre os nós:"
