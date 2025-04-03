@@ -169,7 +169,7 @@ data:
           - "` + "`" + `kubectl create namespace k8s-demo` + "`" + `"
           - "Crie um arquivo pod.yaml com o seguinte conteúdo:"
           - |
-            ` + "```yaml" + `
+            ` + "```" + `
             apiVersion: v1
             kind: Pod
             metadata:
@@ -635,7 +635,7 @@ data:
           - "Agora, vamos criar outro deployment usando um arquivo YAML:"
           - "Crie um arquivo deployment.yaml:"
           - |
-            ` + "```yaml" + `
+            ` + "```" + `
             apiVersion: apps/v1
             kind: Deployment
             metadata:
