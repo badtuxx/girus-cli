@@ -1,0 +1,113 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: docker-containers-lab
+  namespace: girus
+  labels:
+    app: girus-lab-template
+data:
+  lab.yaml: |
+    name: docker-containers-management
+    title: "Criando, Listando e Removendo Containers"
+    description: "Aprenda a gerenciar o ciclo de vida de containers Docker: criação, listagem e remoção"
+    duration: 20m
+    image: "linuxtips/girus-devops:0.1"
+    privileged: true
+    tasks:
+      - name: "Criando Containers Docker"
+        description: "Aprenda a criar containers com diferentes configurações"
+        steps:
+          - "Verifique se o Docker está em execução:"
+          - "` + "`" + `docker info` + "`" + `"
+          - "Crie um container simples do Nginx:"
+          - "` + "`" + `docker run --name webserver -d nginx` + "`" + `"
+          - "Crie um container com mapeamento de portas:"
+          - "` + "`" + `docker run --name webserver-ports -d -p 8080:80 nginx` + "`" + `"
+          - "Crie um container com variáveis de ambiente:"
+          - "` + "`" + `docker run --name env-test -e MINHA_VAR=test -d alpine sh -c 'while true; do sleep 10; done'` + "`" + `"
+          - "Crie um container com limite de recursos:"
+          - "` + "`" + `docker run --name limited-resources -d --memory=100m --cpus=0.2 nginx` + "`" + `"
+          - "Crie um container efêmero (que se auto-remove):"
+          - "` + "`" + `docker run --rm alpine echo \"Este container será removido automaticamente\"` + "`" + `"
+        tips:
+          - type: "info"
+            title: "Opções comuns do docker run"
+            content: "-d (detached), -p (mapeamento de portas), -e (variáveis de ambiente), -v (volumes), --name (nomear o container), --rm (auto-remover)"
+          - type: "warning"
+            title: "Recursos limitados"
+            content: "Em ambientes de produção, sempre limite os recursos (memória/CPU) que um container pode usar para evitar que um único container consume todos os recursos do host."
+        validation:
+          - command: "docker ps -a --format '{{.Names}}' | grep -E 'webserver|env-test|limited-resources' | wc -l"
+            expectedOutput: "4"
+            errorMessage: "Alguns containers não foram criados corretamente"
+      
+      - name: "Listando e Inspecionando Containers"
+        description: "Aprenda a listar, filtrar e inspecionar containers"
+        steps:
+          - "Liste todos os containers em execução:"
+          - "` + "`" + `docker ps` + "`" + `"
+          - "Liste todos os containers (incluindo os parados):"
+          - "` + "`" + `docker ps -a` + "`" + `"
+          - "Liste apenas os IDs dos containers:"
+          - "` + "`" + `docker ps -q` + "`" + `"
+          - "Filtre containers por nome:"
+          - "` + "`" + `docker ps -a --filter \"name=webserver\"` + "`" + `"
+          - "Filtre containers por status:"
+          - "` + "`" + `docker ps -a --filter \"status=running\"` + "`" + `"
+          - "Use formatação personalizada para a saída:"
+          - "` + "`" + `docker ps --format \"{{.Names}} - {{.Status}} - {{.Image}}\"` + "`" + `"
+          - "Inspecione detalhes de um container específico:"
+          - "` + "`" + `docker inspect webserver` + "`" + `"
+          - "Extraia uma informação específica com formato:"
+          - "` + "`" + `docker inspect --format='{{.State.Status}}' webserver` + "`" + `"
+          - "Verifique os logs de um container:"
+          - "` + "`" + `docker logs webserver` + "`" + `"
+          - "Verifique estatísticas de uso de recursos:"
+          - "` + "`" + `docker stats --no-stream` + "`" + `"
+        tips:
+          - type: "tip"
+            title: "Formatação no Docker"
+            content: "O Docker suporta templates Go para formatar a saída de comandos como ps e inspect. Use --format para personalizar o que você quer ver."
+          - type: "info"
+            title: "Dica para filtros"
+            content: "Você pode combinar múltiplos filtros com --filter, e eles atuam como condição 'AND' (todos devem ser verdadeiros)."
+        validation:
+          - command: "docker ps -a --format '{{.Names}}' | sort | tr '\n' ',' | grep -E 'webserver,|env-test,|limited-resources,' | wc -l"
+            expectedOutput: "1"
+            errorMessage: "Não foi possível listar todos os containers corretamente"
+      
+      - name: "Gerenciando o Ciclo de Vida dos Containers"
+        description: "Aprenda a iniciar, parar, reiniciar e remover containers"
+        steps:
+          - "Pare um container em execução:"
+          - "` + "`" + `docker stop webserver` + "`" + `"
+          - "Verifique se o container foi parado:"
+          - "` + "`" + `docker ps -a --filter name=webserver` + "`" + `"
+          - "Inicie novamente o container parado:"
+          - "` + "`" + `docker start webserver` + "`" + `"
+          - "Reinicie um container:"
+          - "` + "`" + `docker restart webserver-ports` + "`" + `"
+          - "Pause um container (congele seu estado):"
+          - "` + "`" + `docker pause env-test` + "`" + `"
+          - "Despause um container congelado:"
+          - "` + "`" + `docker unpause env-test` + "`" + `"
+          - "Remova um container (deve estar parado):"
+          - "` + "`" + `docker stop limited-resources` + "`" + `"
+          - "` + "`" + `docker rm limited-resources` + "`" + `"
+          - "Remova um container forçadamente (mesmo em execução):"
+          - "` + "`" + `docker rm -f webserver-ports` + "`" + `"
+          - "Remova todos os containers parados:"
+          - "` + "`" + `docker container prune -f` + "`" + `"
+          - "Crie e remova um container em um único comando:"
+          - "` + "`" + `docker run --rm alpine echo \"Criado e removido automaticamente\"` + "`" + `"
+        tips:
+          - type: "warning"
+            title: "Remoção forçada"
+            content: "O parâmetro -f (force) para docker rm pode causar corrupção de dados se o container estiver gravando informações. Use com cuidado em ambientes de produção."
+          - type: "info"
+            title: "Tempo de espera"
+            content: "Por padrão, docker stop espera 10 segundos antes de enviar SIGKILL. Você pode ajustar isso com --time=segundos."
+        validation:
+          - command: "docker ps -a --format '{{.Names}}' | grep -E 'limited-resources|webserver-ports' | wc -l"
+            expectedOutput: "0"
+            errorMessage: "Os containers não foram removidos corretamente"

@@ -1,0 +1,78 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: docker-basics-lab
+  namespace: girus
+  labels:
+    app: girus-lab-template
+data:
+  lab.yaml: |
+    name: docker-basics
+    title: "Fundamentos de Docker"
+    description: "Aprenda comandos básicos do Docker para criar, gerenciar e executar containers"
+    duration: 15m
+    timerEnabled: true
+    maxDuration: 15m
+    image: "linuxtips/girus-devops:0.1"
+    youtubeVideo: "https://www.youtube.com/watch?v=0cDj7citEjE"
+    privileged: true
+    tasks:
+      - name: "Explorando o Ambiente Docker"
+        description: "Aprenda a verificar o ambiente Docker e seus componentes básicos"
+        steps:
+          - "Verifique a versão do Docker instalada:"
+          - "` + "`" + `docker --version` + "`" + `"
+          - "Verifique informações detalhadas sobre a instalação do Docker:"
+          - "` + "`" + `docker info` + "`" + `"
+          - "Liste as imagens disponíveis localmente:"
+          - "` + "`" + `docker images` + "`" + `"
+          - "Liste todos os containers (incluindo os parados):"
+          - "` + "`" + `docker ps -a` + "`" + `"
+          - "Verifique as redes Docker disponíveis:"
+          - "` + "`" + `docker network ls` + "`" + `"
+        tips:
+          - type: "info"
+            title: "Docker CLI - Sua ferramenta principal"
+            content: "O comando docker é a ferramenta de linha de comando para interagir com o Docker. Sempre que tiver dúvidas sobre um comando, use docker --help ou docker [comando] --help."
+          - type: "tip"
+            title: "Formatos de saída"
+            content: "Você pode mudar o formato de saída de qualquer comando docker usando --format. Por exemplo: docker ps --format '{{.Names}} {{.Status}}'"
+        validation:
+          - command: "docker info &>/dev/null && echo 'success' || echo 'error'"
+            expectedOutput: "success"
+            errorMessage: "Não foi possível acessar o daemon Docker. Verifique se o serviço está em execução."
+      
+      - name: "Executando Containers"
+        description: "Aprenda a executar e gerenciar containers Docker"
+        steps:
+          - "Execute um container hello-world para testar o ambiente:"
+          - "` + "`" + `docker run hello-world` + "`" + `"
+          - "Execute um container nginx em modo detached (background):"
+          - "` + "`" + `docker run -d --name meu-nginx -p 8080:80 nginx` + "`" + `"
+          - "Verifique se o container está em execução:"
+          - "` + "`" + `docker ps` + "`" + `"
+          - "Acesse o nginx através do navegador ou usando curl:"
+          - "` + "`" + `curl localhost:8080` + "`" + `"
+          - "Veja os logs do container:"
+          - "` + "`" + `docker logs meu-nginx` + "`" + `"
+          - "Pare o container:"
+          - "` + "`" + `docker stop meu-nginx` + "`" + `"
+          - "Inicie o container novamente:"
+          - "` + "`" + `docker start meu-nginx` + "`" + `"
+          - "Execute um container interativo (e descartável) do Ubuntu:"
+          - "` + "`" + `docker run -it --rm ubuntu bash` + "`" + `"
+          - "No terminal do container, execute alguns comandos:"
+          - "` + "`" + `ls -la` + "`" + `"
+          - "` + "`" + `cat /etc/os-release` + "`" + `"
+          - "Digite 'exit' para sair do container"
+        tips:
+          - type: "warning"
+            title: "Portas expostas"
+            content: "Lembre-se que para acessar serviços dentro de um container a partir do host, você precisa mapear as portas com a flag -p. Exemplo: -p [porta-host]:[porta-container]"
+          - type: "info"
+            title: "Modos de execução"
+            content: "O Docker permite executar containers em modo detached (-d), interativo (-it) ou com uma combinação de flags. Use --rm para remover automaticamente o container quando ele for finalizado."
+        validation:
+          - command: "docker ps -a --format '{{.Names}}' | grep -w meu-nginx || echo ''"
+            expectedOutput: "meu-nginx"
+            errorMessage: "O container meu-nginx não foi criado"

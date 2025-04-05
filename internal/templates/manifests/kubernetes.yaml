@@ -1,0 +1,86 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: kubernetes-basics-lab
+  namespace: girus
+  labels:
+    app: girus-lab-template
+data:
+  lab.yaml: |
+    name: kubernetes-basics
+    title: "Fundamentos de Kubernetes"
+    description: "Aprenda comandos básicos do Kubernetes para gerenciar recursos em um cluster"
+    duration: 15m
+    image: "linuxtips/girus-kind-single-node:0.1"
+    tasks:
+      - name: "Explorando o Cluster"
+        description: "Aprenda a verificar os componentes básicos de um cluster Kubernetes"
+        steps:
+          - "Verifique se o kubectl está instalado:"
+          - "` + "`" + `kubectl version` + "`" + `"
+          - "Verifique os nós do cluster executando:"
+          - "` + "`" + `kubectl get nodes` + "`" + `"
+          - "Veja informações mais detalhadas sobre os nós:"
+          - "` + "`" + `kubectl get nodes -o wide` + "`" + `"
+          - "Verifique os namespaces disponíveis:"
+          - "` + "`" + `kubectl get namespaces` + "`" + `"
+          - "Veja os pods do namespace kube-system (componentes internos do K8s):"
+          - "` + "`" + `kubectl get pods -n kube-system` + "`" + `"
+          - "Examine os detalhes de um nó específico (substitua [nome-do-nó] pelo nome real):"
+          - "` + "`" + `kubectl describe node [nome-do-nó]` + "`" + `"
+        tips:
+          - type: "info"
+            title: "kubectl - Sua ferramenta principal"
+            content: "O kubectl é a ferramenta de linha de comando para interagir com o Kubernetes. Sempre que tiver dúvidas sobre um comando, use kubectl --help ou kubectl [comando] --help."
+          - type: "tip"
+            title: "Formatos de saída"
+            content: "Você pode mudar o formato de saída de qualquer comando kubectl usando -o yaml, -o json, -o wide. Para visualizações compactas, -o custom-columns é útil."
+        validation:
+          - command: "kubectl get nodes -o name | wc -l | tr -d ' '"
+            expectedOutput: "1"
+            errorMessage: "Não foi possível listar os nós do cluster"
+      
+      - name: "Criando um Pod"
+        description: "Aprenda a criar e gerenciar pods, que são a menor unidade executável no Kubernetes"
+        steps:
+          - "Crie um namespace para o exercício:"
+          - "` + "`" + `kubectl create namespace k8s-demo` + "`" + `"
+          - "Crie um arquivo pod.yaml com o seguinte conteúdo:"
+          - |
+            ` + "```yaml" + `
+            apiVersion: v1
+            kind: Pod
+            metadata:
+              name: nginx-pod
+              namespace: k8s-demo
+              labels:
+                app: nginx
+            spec:
+              containers:
+              - name: nginx
+                image: nginx:latest
+                ports:
+                - containerPort: 80
+            ` + "```" + `
+          - "Crie o pod executando:"
+          - "` + "`" + `kubectl apply -f pod.yaml` + "`" + `"
+          - "Verifique se o pod está rodando:"
+          - "` + "`" + `kubectl get pods -n k8s-demo` + "`" + `"
+          - "Verifique os logs do pod:"
+          - "` + "`" + `kubectl logs nginx-pod -n k8s-demo` + "`" + `"
+          - "Acesse o shell do pod:"
+          - "` + "`" + `kubectl exec -it nginx-pod -n k8s-demo -- /bin/bash` + "`" + `"
+          - "Dentro do container, verifique se o nginx está rodando:"
+          - "` + "`" + `curl localhost:80` + "`" + `"
+          - "Digite 'exit' para sair do container"
+        tips:
+          - type: "warning"
+            title: "Cuidado com imagens 'latest'"
+            content: "Em ambientes de produção, evite usar a tag 'latest' para imagens. Prefira versões específicas para garantir consistência e evitar surpresas em atualizações automáticas."
+          - type: "info"
+            title: "Namespaces"
+            content: "Os namespaces são uma forma de criar isolamento virtual dentro do cluster. Eles permitem separar recursos, definir cotas e gerenciar permissões para diferentes equipes ou aplicações."
+        validation:
+          - command: "kubectl get pod nginx-pod -n k8s-demo -o jsonpath='{.status.phase}' 2>/dev/null || echo ''"
+            expectedOutput: "Running"
+            errorMessage: "O Pod nginx-pod não está no estado Running"

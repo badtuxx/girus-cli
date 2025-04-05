@@ -1,0 +1,118 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: linux-permissions-lab
+  namespace: girus
+  labels:
+    app: girus-lab-template
+data:
+  lab.yaml: |
+    name: linux-file-permissions
+    title: "Permissões de Arquivos no Linux"
+    description: "Aprenda a visualizar e modificar permissões de arquivos e diretórios no Linux"
+    duration: 15m
+    image: "linuxtips/girus-devops:0.1"
+    youtubeVideo: "https://www.youtube.com/watch?v=tT69ipXOzfc"
+    tasks:
+      - name: "Entendendo Permissões Básicas"
+        description: "Aprenda a visualizar e interpretar permissões de arquivos e diretórios"
+        steps:
+          - "Crie um diretório para o exercício:"
+          - "` + "`" + `mkdir ~/permissoes` + "`" + `"
+          - "Entre no diretório:"
+          - "` + "`" + `cd ~/permissoes` + "`" + `"
+          - "Crie arquivos de teste:"
+          - "` + "`" + `touch arquivo1.txt arquivo2.txt` + "`" + `"
+          - "Visualize as permissões atuais:"
+          - "` + "`" + `ls -la` + "`" + `"
+          - "Observe o formato das permissões: [tipo][dono][grupo][outros]"
+          - "Exemplo: -rw-r--r-- significa arquivo comum, dono pode ler e escrever, grupo e outros só podem ler"
+          - "Crie um script simples:"
+          - "` + "`" + `echo '#!/bin/bash' > script.sh` + "`" + `"
+          - "` + "`" + `echo 'echo \"Hello, World!\"' >> script.sh` + "`" + `"
+          - "Tente executar o script:"
+          - "` + "`" + `./script.sh` + "`" + `"
+          - "Você verá uma mensagem de permissão negada"
+        tips:
+          - type: "info"
+            title: "Formato das permissões"
+            content: "As permissões são representadas por 10 caracteres: o primeiro indica o tipo (- para arquivo, d para diretório), seguido por três grupos de rwx (read, write, execute) para dono, grupo e outros."
+          - type: "tip"
+            title: "Significado dos modos"
+            content: "r (4) = permissão de leitura, w (2) = permissão de escrita, x (1) = permissão de execução. Os valores numéricos são somados para definir as permissões em octal."
+        validation:
+          - command: "test -f ~/permissoes/script.sh && echo 'ok'"
+            expectedOutput: "ok"
+            errorMessage: "O arquivo script.sh não foi criado corretamente"
+      
+      - name: "Modificando Permissões"
+        description: "Aprenda a modificar permissões de arquivos usando chmod"
+        steps:
+          - "Adicione permissão de execução ao script criado anteriormente:"
+          - "` + "`" + `chmod +x script.sh` + "`" + `"
+          - "Verifique as novas permissões:"
+          - "` + "`" + `ls -la script.sh` + "`" + `"
+          - "Agora execute o script:"
+          - "` + "`" + `./script.sh` + "`" + `"
+          - "Defina permissões usando notação octal:"
+          - "` + "`" + `chmod 644 arquivo1.txt` + "`" + `"
+          - "` + "`" + `chmod 640 arquivo2.txt` + "`" + `"
+          - "Verifique as permissões após a mudança:"
+          - "` + "`" + `ls -la arquivo*.txt` + "`" + `"
+          - "Use chmod recursivo para modificar permissões em lote:"
+          - "` + "`" + `mkdir -p subdir/subsubdir` + "`" + `"
+          - "` + "`" + `touch subdir/file1 subdir/subsubdir/file2` + "`" + `"
+          - "` + "`" + `chmod -R 750 subdir` + "`" + `"
+          - "Verifique as permissões recursivas:"
+          - "` + "`" + `ls -la subdir` + "`" + `"
+          - "` + "`" + `ls -la subdir/subsubdir` + "`" + `"
+        tips:
+          - type: "info"
+            title: "Notação simbólica vs octal"
+            content: "Você pode usar notação simbólica (chmod u+x) ou octal (chmod 755). Em octal, cada dígito representa as permissões para dono, grupo e outros, respectivamente."
+          - type: "warning"
+            title: "Permissões e segurança"
+            content: "Permissões muito abertas (ex: 777) representam riscos de segurança. Use sempre as permissões mínimas necessárias."
+        validation:
+          - command: "test -x ~/permissoes/script.sh && echo 'ok'"
+            expectedOutput: "ok"
+            errorMessage: "O script não tem permissão de execução"
+          - command: "stat -c %a ~/permissoes/arquivo1.txt"
+            expectedOutput: "644"
+            errorMessage: "O arquivo1.txt não tem as permissões corretas (644)"
+      
+      - name: "Propriedade de Arquivos e umask"
+        description: "Aprenda a alterar o proprietário dos arquivos e configurar o umask"
+        steps:
+          - "Veja o proprietário atual dos arquivos:"
+          - "` + "`" + `ls -la` + "`" + `"
+          - "Verifique o umask atual:"
+          - "` + "`" + `umask` + "`" + `"
+          - "Crie um novo arquivo com o umask padrão:"
+          - "` + "`" + `touch arquivo_umask_padrao.txt` + "`" + `"
+          - "` + "`" + `ls -la arquivo_umask_padrao.txt` + "`" + `"
+          - "Mude temporariamente o umask para 027:"
+          - "` + "`" + `umask 027` + "`" + `"
+          - "Crie outro arquivo com o novo umask:"
+          - "` + "`" + `touch arquivo_umask_027.txt` + "`" + `"
+          - "` + "`" + `ls -la arquivo_umask_027.txt` + "`" + `"
+          - "Volte ao umask padrão (geralmente 022):"
+          - "` + "`" + `umask 022` + "`" + `"
+          - "Se você tiver permissão de sudo, altere o proprietário de um arquivo:"
+          - "` + "`" + `sudo chown root:root arquivo1.txt` + "`" + `"
+          - "Verifique a mudança de proprietário:"
+          - "` + "`" + `ls -la arquivo1.txt` + "`" + `"
+        tips:
+          - type: "info"
+            title: "Umask explicado"
+            content: "O umask define quais permissões são removidas por padrão ao criar novos arquivos e diretórios. Um umask de 022 remove escrita para grupo e outros, resultando em 644 para arquivos e 755 para diretórios."
+          - type: "tip"
+            title: "Permissão padrão"
+            content: "A permissão padrão para diretórios é 777 e para arquivos é 666. O valor do umask é subtraído dessas permissões padrão."
+        validation:
+          - command: "umask"
+            expectedOutput: "0022"
+            errorMessage: "O umask não foi revertido para o valor padrão"
+          - command: "stat -c %a ~/permissoes/arquivo_umask_027.txt 2>/dev/null || echo 'ausente'"
+            expectedOutput: "640"
+            errorMessage: "O arquivo com umask 027 não tem as permissões esperadas ou não foi criado"

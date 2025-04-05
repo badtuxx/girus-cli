@@ -1,0 +1,145 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: k8s-deployment-lab
+  namespace: girus
+  labels:
+    app: girus-lab-template
+data:
+  lab.yaml: |
+    name: k8s-nginx-deployment
+    title: "Deployment Nginx no Kubernetes"
+    description: "Aprenda a criar um deployment do Nginx e verificar os detalhes dos pods no Kubernetes"
+    duration: 15m
+    timerEnabled: true
+    maxDuration: 15m
+    image: "linuxtips/girus-kind-single-node:0.1"
+    youtubeVideo: "https://www.youtube.com/watch?v=sU235yW6QJM"
+    tasks:
+      - name: "Criando um Deployment do Nginx"
+        description: "Aprenda a criar um deployment do Nginx usando kubectl"
+        steps:
+          - "Verifique se o cluster Kubernetes está em execução:"
+          - "` + "`" + `kubectl get nodes` + "`" + `"
+          - "Crie um namespace para o exercício:"
+          - "` + "`" + `kubectl create namespace nginx-example` + "`" + `"
+          - "Crie um deployment do Nginx de forma imperativa:"
+          - "` + "`" + `kubectl create deployment nginx-deployment --image=nginx:latest --replicas=2 -n nginx-example` + "`" + `"
+          - "Verifique se o deployment foi criado:"
+          - "` + "`" + `kubectl get deployments -n nginx-example` + "`" + `"
+          - "Verifique o status da implantação:"
+          - "` + "`" + `kubectl rollout status deployment/nginx-deployment -n nginx-example` + "`" + `"
+          - "Agora, vamos criar outro deployment usando um arquivo YAML:"
+          - "Crie um arquivo deployment.yaml:"
+          - |
+            ` + "```yaml" + `
+            apiVersion: apps/v1
+            kind: Deployment
+            metadata:
+              name: nginx-declarative
+              namespace: nginx-example
+              labels:
+                app: nginx-declarative
+            spec:
+              replicas: 3
+              selector:
+                matchLabels:
+                  app: nginx-declarative
+              template:
+                metadata:
+                  labels:
+                    app: nginx-declarative
+                spec:
+                  containers:
+                  - name: nginx
+                    image: nginx:stable
+                    ports:
+                    - containerPort: 80
+                    resources:
+                      limits:
+                        cpu: "0.3"
+                        memory: "128Mi"
+                      requests:
+                        cpu: "0.1"
+                        memory: "64Mi"
+            ` + "```" + `
+          - "Aplique o arquivo YAML:"
+          - "` + "`" + `kubectl apply -f deployment.yaml` + "`" + `"
+          - "Verifique se ambos os deployments estão em execução:"
+          - "` + "`" + `kubectl get deployments -n nginx-example` + "`" + `"
+        tips:
+          - type: "info"
+            title: "Abordagens de criação"
+            content: "No Kubernetes, você pode criar recursos de forma imperativa (com comandos diretos) ou declarativa (usando arquivos YAML). A abordagem declarativa é preferida para ambientes de produção, pois facilita o controle de versão."
+          - type: "warning"
+            title: "Seletor de labels"
+            content: "É essencial que o seletor no deployment corresponda exatamente às labels dos pods, caso contrário, o deployment não conseguirá gerenciar os pods."
+        validation:
+          - command: "kubectl get deployments -n nginx-example -o name | wc -l"
+            expectedOutput: "2"
+            errorMessage: "Os deployments não foram criados corretamente"
+      
+      - name: "Verificando Detalhes dos Pods"
+        description: "Aprenda a verificar e depurar os pods criados pelo deployment"
+        steps:
+          - "Liste todos os pods gerados pelos deployments:"
+          - "` + "`" + `kubectl get pods -n nginx-example` + "`" + `"
+          - "Verifique os detalhes de um pod específico (substitua [pod-name] pelo nome real do pod):"
+          - "` + "`" + `POD_NAME=$(kubectl get pods -n nginx-example -l app=nginx-declarative -o jsonpath='{.items[0].metadata.name}')` + "`" + `"
+          - "` + "`" + `kubectl describe pod $POD_NAME -n nginx-example` + "`" + `"
+          - "Verifique os logs de um pod:"
+          - "` + "`" + `kubectl logs $POD_NAME -n nginx-example` + "`" + `"
+          - "Verifique os eventos no namespace:"
+          - "` + "`" + `kubectl get events -n nginx-example` + "`" + `"
+          - "Acesse a aplicação Nginx em um pod (isso abrirá um shell):"
+          - "` + "`" + `kubectl exec -it $POD_NAME -n nginx-example -- /bin/bash` + "`" + `"
+          - "Dentro do container, verifique se o Nginx está respondendo:"
+          - "` + "`" + `curl localhost:80` + "`" + `"
+          - "Saia do shell com o comando 'exit'"
+        tips:
+          - type: "tip"
+            title: "Filtrar pods por label"
+            content: "Use -l (--selector) para filtrar pods por labels, o que é útil quando há muitos pods no namespace."
+          - type: "info"
+            title: "Acessando logs"
+            content: "Para containers com múltiplos aplicativos (sidecar), especifique o container com -c [nome-container] no comando kubectl logs."
+        validation:
+          - command: "kubectl get pods -n nginx-example -l app=nginx-declarative --no-headers | wc -l"
+            expectedOutput: "3"
+            errorMessage: "O número de pods para o deployment declarativo não está correto"
+      
+      - name: "Expondo e Escalando o Deployment"
+        description: "Aprenda a expor o deployment como um serviço e escalar o número de réplicas"
+        steps:
+          - "Crie um serviço para expor o deployment:"
+          - "` + "`" + `kubectl expose deployment nginx-declarative --port=80 --type=ClusterIP -n nginx-example` + "`" + `"
+          - "Verifique se o serviço foi criado:"
+          - "` + "`" + `kubectl get services -n nginx-example` + "`" + `"
+          - "Escale o deployment para ter 5 réplicas:"
+          - "` + "`" + `kubectl scale deployment/nginx-declarative --replicas=5 -n nginx-example` + "`" + `"
+          - "Verifique se o número de pods foi atualizado:"
+          - "` + "`" + `kubectl get pods -n nginx-example -l app=nginx-declarative` + "`" + `"
+          - "Observe o estado da escala em tempo real:"
+          - "` + "`" + `kubectl rollout status deployment/nginx-declarative -n nginx-example` + "`" + `"
+          - "Atualize a imagem do deployment para uma versão específica:"
+          - "` + "`" + `kubectl set image deployment/nginx-declarative nginx=nginx:1.19 -n nginx-example` + "`" + `"
+          - "Verifique o histórico de rollout:"
+          - "` + "`" + `kubectl rollout history deployment/nginx-declarative -n nginx-example` + "`" + `"
+          - "Veja os detalhes de uma revisão específica:"
+          - "` + "`" + `kubectl rollout history deployment/nginx-declarative --revision=2 -n nginx-example` + "`" + `"
+          - "Faça rollback para a revisão anterior, se necessário:"
+          - "` + "`" + `kubectl rollout undo deployment/nginx-declarative -n nginx-example` + "`" + `"
+        tips:
+          - type: "info"
+            title: "Tipos de serviço"
+            content: "O Kubernetes oferece diferentes tipos de serviços: ClusterIP (interno), NodePort (expõe em cada nó), LoadBalancer (usa balanceador externo) e ExternalName (mapeia para um nome externo)."
+          - type: "warning"
+            title: "Escala e recursos"
+            content: "Ao escalar um deployment, certifique-se de que o cluster tem recursos suficientes (CPU/memória) para suportar o número de réplicas solicitado."
+        validation:
+          - command: "kubectl get pods -n nginx-example -l app=nginx-declarative --no-headers | wc -l"
+            expectedOutput: "5"
+            errorMessage: "O deployment não foi escalado corretamente para 5 réplicas"
+          - command: "kubectl get svc -n nginx-example -o name | grep nginx-declarative | wc -l"
+            expectedOutput: "1"
+            errorMessage: "O serviço para o deployment declarativo não foi criado corretamente"

@@ -1,0 +1,280 @@
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: girus
+---
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: girus-sa
+  namespace: girus
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: Role
+metadata:
+  name: girus-role
+  namespace: girus
+rules:
+  - apiGroups: [""]
+    resources: ["pods", "pods/log", "pods/exec"]
+    verbs: ["get", "list", "create", "delete", "watch"]
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  name: girus-cluster-role
+rules:
+  - apiGroups: [""]
+    resources: ["namespaces"]
+    verbs: ["get", "list", "watch", "create", "delete"]
+  - apiGroups: [""]
+    resources: ["nodes"]
+    verbs: ["get", "list", "watch"]
+  - apiGroups: [""]
+    resources: ["pods", "pods/log", "pods/exec"]
+    verbs: ["get", "list", "watch", "create", "delete"]
+  - apiGroups: ["apps"]
+    resources: ["deployments"]
+    verbs: ["get", "list", "watch", "create", "update", "patch", "delete"]
+  - apiGroups: [""]
+    resources: ["services", "configmaps", "secrets", "serviceaccounts"]
+    verbs: ["get", "list", "watch", "create", "update", "patch", "delete"]
+  - apiGroups: ["rbac.authorization.k8s.io"]
+    resources: ["roles", "rolebindings"]
+    verbs: ["get", "list", "watch", "create", "update", "patch", "delete"]
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRoleBinding
+metadata:
+  name: girus-cluster-rolebinding
+subjects:
+  - kind: ServiceAccount
+    name: girus-sa
+    namespace: girus
+roleRef:
+  kind: ClusterRole
+  name: girus-cluster-role
+  apiGroup: rbac.authorization.k8s.io
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: RoleBinding
+metadata:
+  name: girus-rolebinding
+  namespace: girus
+subjects:
+  - kind: ServiceAccount
+    name: girus-sa
+    namespace: girus
+roleRef:
+  kind: Role
+  name: girus-role
+  apiGroup: rbac.authorization.k8s.io
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: girus-config
+  namespace: girus
+data:
+  config.yaml: |
+    lab:
+      defaultImage: "ubuntu:latest"
+      podNamePrefix: "lab"
+      containerName: "linux-lab"
+      command:
+        - "sleep"
+        - "infinity"
+      resources:
+        cpuRequest: "100m"
+        cpuLimit: "500m"
+        memoryRequest: "64Mi"
+        memoryLimit: "256Mi"
+      envVars:
+        TERM: "xterm-256color"
+        SHELL: "/bin/bash"
+        privileged: false
+    # Outras configurações podem ser adicionadas aqui
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: girus-backend
+  namespace: girus
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: girus-backend
+  template:
+    metadata:
+      labels:
+        app: girus-backend
+    spec:
+      serviceAccountName: girus-sa
+      containers:
+        - name: backend
+          image: linuxtips/girus-backend:0.1
+          imagePullPolicy: IfNotPresent
+          ports:
+            - containerPort: 8080
+          env:
+            - name: PORT
+              value: "8080"
+            - name: GIN_MODE
+              value: "release"
+            - name: LAB_DEFAULT_IMAGE
+              valueFrom:
+                configMapKeyRef:
+                  name: girus-config
+                  key: lab.defaultImage
+                  optional: true
+          volumeMounts:
+            - name: config-volume
+              mountPath: /app/config
+      volumes:
+        - name: config-volume
+          configMap:
+            name: girus-config
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: girus-frontend
+  namespace: girus
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: girus-frontend
+  template:
+    metadata:
+      labels:
+        app: girus-frontend
+    spec:
+      containers:
+        - name: frontend
+          image: linuxtips/girus-frontend:0.1
+          imagePullPolicy: IfNotPresent
+          ports:
+            - containerPort: 80
+          volumeMounts:
+            - name: nginx-config
+              mountPath: /etc/nginx/conf.d
+      volumes:
+        - name: nginx-config
+          configMap:
+            name: nginx-config
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: girus-backend
+  namespace: girus
+spec:
+  selector:
+    app: girus-backend
+  ports:
+    - port: 8080
+      targetPort: 8080
+  type: ClusterIP
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: girus-frontend
+  namespace: girus
+spec:
+  selector:
+    app: girus-frontend
+  ports:
+    - port: 80
+      targetPort: 80
+  type: ClusterIP
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: nginx-config
+  namespace: girus
+data:
+  default.conf: |
+    server {
+        listen 80;
+        server_name localhost;
+        root /usr/share/nginx/html;
+        index index.html;
+        
+        # Compressão
+        gzip on;
+        gzip_vary on;
+        gzip_min_length 1000;
+        gzip_proxied any;
+        gzip_types text/plain text/css application/json application/javascript text/xml application/xml application/xml+rss text/javascript;
+        gzip_comp_level 6;
+        
+        # Cache para recursos estáticos
+        location ~* \.(jpg|jpeg|png|gif|ico|css|js)$ {
+            expires 30d;
+            add_header Cache-Control "public, no-transform";
+        }
+        
+        # Redirecionar todas as requisições API para o backend
+        location /api/ {
+            proxy_pass http://girus-backend:8080/api/;
+            proxy_http_version 1.1;
+            proxy_set_header Upgrade $http_upgrade;
+            proxy_set_header Connection "upgrade";
+            proxy_set_header Host $host;
+            proxy_set_header X-Real-IP $remote_addr;
+            proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+            proxy_set_header X-Forwarded-Proto $scheme;
+            proxy_buffering off;
+            proxy_request_buffering off;
+        }
+        
+        # Configuração para WebSockets
+        location /ws/ {
+            proxy_pass http://girus-backend:8080/ws/;
+            proxy_http_version 1.1;
+            proxy_set_header Upgrade $http_upgrade;
+            proxy_set_header Connection "upgrade";
+            proxy_set_header Host $host;
+            proxy_set_header X-Real-IP $remote_addr;
+            proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+            proxy_read_timeout 86400;
+        }
+        
+        # Configuração para React Router
+        location / {
+            try_files $uri $uri/ /index.html;
+        }
+    }
+---
+# Criar o namespace para o usuário de teste
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: lab-test-user
+---
+# Criar a service account caso ela não exista
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: default
+  namespace: lab-test-user
+---
+# Conceder permissões de administrador para o usuário de teste
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRoleBinding
+metadata:
+  name: lab-test-user-admin-access
+  annotations:
+    description: "Permissões de administrador para ambiente educacional"
+subjects:
+  - kind: ServiceAccount
+    name: default
+    namespace: lab-test-user
+roleRef:
+  kind: ClusterRole
+  name: cluster-admin
+  apiGroup: rbac.authorization.k8s.io

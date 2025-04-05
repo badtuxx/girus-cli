@@ -1,0 +1,76 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: linux-users-lab
+  namespace: girus
+  labels:
+    app: girus-lab-template
+data:
+  lab.yaml: |
+    name: linux-users-admin
+    title: "Administrando Usuários no Linux"
+    description: "Aprenda a criar, modificar e gerenciar contas de usuários e grupos no Linux"
+    duration: 10m
+    timerEnabled: true
+    maxDuration: 10m
+    image: "linuxtips/girus-devops:0.1"
+    tasks:
+      - name: "Gerenciamento de Usuários"
+        description: "Aprenda a criar, modificar e remover contas de usuários"
+        steps:
+          - "Visualize informações sobre o usuário atual:"
+          - "` + "`" + `id` + "`" + `"
+          - "Veja a lista de todos os usuários no sistema:"
+          - "` + "`" + `cat /etc/passwd` + "`" + `"
+          - "Crie um novo usuário chamado 'testuser':"
+          - "` + "`" + `sudo useradd testuser` + "`" + `"
+          - "Defina uma senha para o novo usuário:"
+          - "` + "`" + `sudo passwd testuser` + "`" + `"
+          - "Veja as informações do usuário criado:"
+          - "` + "`" + `id testuser` + "`" + `"
+          - "Modifique o shell padrão do usuário para bash:"
+          - "` + "`" + `sudo usermod -s /bin/bash testuser` + "`" + `"
+          - "Adicione um comentário (nome completo) ao usuário:"
+          - "` + "`" + `sudo usermod -c \"Usuário de Teste\" testuser` + "`" + `"
+          - "Veja as alterações no arquivo /etc/passwd:"
+          - "` + "`" + `grep testuser /etc/passwd` + "`" + `"
+        tips:
+          - type: "info"
+            title: "Comandos para Gerenciamento de Usuários"
+            content: "Os comandos principais para gerenciar usuários são: useradd (criar), usermod (modificar), userdel (remover), passwd (definir senha) e id (visualizar informações)."
+          - type: "warning"
+            title: "Segurança"
+            content: "Sempre use senhas fortes e gerencie com cuidado as contas de usuários com privilégios administrativos."
+        validation:
+          - command: "grep testuser /etc/passwd | wc -l"
+            expectedOutput: "1"
+            errorMessage: "O usuário testuser não foi criado corretamente"
+      
+      - name: "Gerenciamento de Grupos"
+        description: "Aprenda a criar e gerenciar grupos de usuários"
+        steps:
+          - "Veja a lista de todos os grupos no sistema:"
+          - "` + "`" + `cat /etc/group` + "`" + `"
+          - "Crie um novo grupo chamado 'projeto':"
+          - "` + "`" + `sudo groupadd projeto` + "`" + `"
+          - "Adicione o usuário 'testuser' ao novo grupo:"
+          - "` + "`" + `sudo usermod -aG projeto testuser` + "`" + `"
+          - "Verifique se o usuário está no grupo:"
+          - "` + "`" + `groups testuser` + "`" + `"
+          - "Crie outro usuário para o grupo projeto:"
+          - "` + "`" + `sudo useradd -G projeto colaborador` + "`" + `"
+          - "Defina uma senha para o novo usuário:"
+          - "` + "`" + `sudo passwd colaborador` + "`" + `"
+          - "Liste todos os usuários do grupo projeto:"
+          - "` + "`" + `grep projeto /etc/group` + "`" + `"
+        tips:
+          - type: "info"
+            title: "Comandos para Gerenciamento de Grupos"
+            content: "Os comandos principais para gerenciar grupos são: groupadd (criar), groupmod (modificar), groupdel (remover) e groups (listar grupos de um usuário)."
+          - type: "tip"
+            title: "Opção -a no usermod"
+            content: "Ao adicionar um usuário a um grupo com usermod, sempre use a opção -a junto com -G para adicionar aos grupos existentes, sem removê-lo de outros grupos."
+        validation:
+          - command: "grep projeto /etc/group | grep -E 'testuser|colaborador' | wc -l"
+            expectedOutput: "1"
+            errorMessage: "O grupo 'projeto' não foi criado corretamente ou os usuários não foram adicionados"

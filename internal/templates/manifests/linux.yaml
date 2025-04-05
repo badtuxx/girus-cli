@@ -1,0 +1,91 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: basic-linux-lab
+  namespace: girus
+  labels:
+    app: girus-lab-template
+data:
+  lab.yaml: |
+    name: linux-basics
+    title: "Introdução ao Linux"
+    description: "Laboratório básico para praticar comandos Linux essenciais e conceitos fundamentais"
+    duration: 10m
+    image: "linuxtips/girus-devops:0.1"
+    tasks:
+      - name: "Navegação básica"
+        description: "Aprenda os comandos essenciais para navegar no sistema de arquivos Linux"
+        steps:
+          - "Comece verificando qual é seu diretório atual com o comando:"
+          - "` + "`" + `pwd` + "`" + `"
+          - "Liste todos os arquivos (incluindo ocultos) do diretório atual:"
+          - "` + "`" + `ls -la` + "`" + `"
+          - "Crie um novo diretório para praticar:"
+          - "` + "`" + `mkdir lab-practice` + "`" + `"
+          - "Entre no diretório criado:"
+          - "` + "`" + `cd lab-practice` + "`" + `"
+          - "Crie alguns arquivos para praticar:"
+          - "` + "`" + `touch file1.txt file2.txt file3.txt` + "`" + `"
+        tips:
+          - type: "info"
+            title: "Dica: Atalhos úteis"
+            content: "Use cd .. para voltar um diretório acima, e cd ~ para ir direto para seu diretório home. O comando ls tem muitas opções úteis: ls -l (formato detalhado), ls -a (mostra arquivos ocultos), ls -h (tamanhos legíveis por humanos)."
+        validation:
+          - command: "test -d lab-practice && echo 'ok'"
+            expectedOutput: "ok"
+            errorMessage: "Diretório 'lab-practice' não foi criado"
+          - command: "test -f lab-practice/file1.txt && echo 'ok'"
+            expectedOutput: "ok"
+            errorMessage: "Arquivos de teste não foram criados"
+
+      - name: "Manipulação de arquivos"
+        description: "Aprenda a criar, editar e gerenciar arquivos no Linux"
+        steps:
+          - "Crie um arquivo de texto usando o editor Vim:"
+          - "` + "`" + `vim notes.txt` + "`" + `"
+          - "Para adicionar texto, pressione 'i' para entrar no modo de inserção e comece a digitar. Pressione 'Esc' para sair do modo de inserção e 'Shift+:' para salvar e sair."
+          - "Salve e saia do Vim com 'Shift+:' e digite 'wq'"
+          - "Visualize o conteúdo do arquivo:"
+          - "` + "`" + `cat notes.txt` + "`" + `"
+          - "Copie um arquivo para outro nome:"
+          - "` + "`" + `cp notes.txt notes-backup.txt` + "`" + `"
+          - "Compare os dois arquivos:"
+          - "` + "`" + `diff notes.txt notes-backup.txt` + "`" + `"
+          - "Adicione mais conteúdo ao arquivo original:"
+          - "` + "`" + `echo 'Nova linha adicionada!' >> notes.txt` + "`" + `"
+          - "Compare novamente os arquivos:"
+          - "` + "`" + `diff notes.txt notes-backup.txt` + "`" + `"
+        tips:
+          - type: "warning"
+            title: "Atenção: Redirecionamentos"
+            content: "O símbolo > redireciona a saída e sobrescreve o arquivo existente, enquanto >> adiciona ao final do arquivo sem apagar o conteúdo anterior."
+        validation:
+          - command: "test -f lab-practice/notes.txt && echo 'ok'"
+            expectedOutput: "ok"
+            errorMessage: "Arquivo notes.txt não foi criado"
+          - command: "test -f lab-practice/notes-backup.txt && echo 'ok'"
+            expectedOutput: "ok"
+            errorMessage: "Arquivo de backup não foi criado"
+
+      - name: "Processos e monitoramento"
+        description: "Aprenda a monitorar e gerenciar processos no Linux"
+        steps:
+          - "Veja os processos em execução:"
+          - "` + "`" + `ps aux` + "`" + `"
+          - "Monitore os processos e recursos em tempo real:"
+          - "` + "`" + `htop` + "`" + `"
+          - "Pressione 'q' para sair do top"
+          - "Execute um processo em segundo plano:"
+          - "` + "`" + `sleep 300 &` + "`" + `"
+          - "Veja o processo em execução:"
+          - "` + "`" + `ps aux | grep sleep` + "`" + `"
+          - "Termine o processo sleep:"
+          - "` + "`" + `pkill sleep` + "`" + `"
+        tips:
+          - type: "tip"
+            title: "Alternativa ao top"
+            content: "O comando htop é uma versão melhorada do top com interface colorida e interativa. Instale-o com 'apt install htop' em sistemas Debian/Ubuntu."
+        validation:
+          - command: "ps aux | grep -v grep | grep -q sleep || echo 'ok'"
+            expectedOutput: "ok"
+            errorMessage: "O processo sleep não foi encerrado corretamente"
