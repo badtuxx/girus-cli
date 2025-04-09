@@ -3,6 +3,7 @@ set -e
 
 # ASCII Art Banner para o Girus
 cat << "EOF"
+
    ██████╗ ██╗██████╗ ██╗   ██╗███████╗
   ██╔════╝ ██║██╔══██╗██║   ██║██╔════╝
   ██║  ███╗██║██████╔╝██║   ██║███████╗
@@ -11,16 +12,39 @@ cat << "EOF"
    ╚═════╝ ╚═╝╚═╝  ╚═╝ ╚═════╝ ╚══════╝
 EOF
 
-echo -e "\nScript de Instalação - Versão 0.2.0 - Codename: Maracatu\n"
-
-# Verificar se o terminal é interativo
+# ==========================
+# Configurações e variáveis
+# ==========================
+BASE_DEPENDENCIES=("curl" "bc" "awk" "sudo")
+GIRUS_CODENAME="Maracatu"
+KIND_VERSION="v0.27.0"
+DOWNLOAD_TOOL="none"
+GIRUS_VERSION="v0.2.0"
 IS_INTERACTIVE=0
-if [ -t 0 ]; then
-    IS_INTERACTIVE=1
-fi
+ORIGINAL_DIR=$(pwd)
+TEMP_DIR=$(mktemp -d)
+trap 'rm -rf "$TEMP_DIR"' EXIT
 
-# Forçar modo interativo para o script completo
-IS_INTERACTIVE=1
+echo -e "\nScript de Instalação - Versão $GIRUS_VERSION - Codename: $GIRUS_CODENAME\n"
+
+# ==========================
+# Funções
+# ==========================
+# Função para verificar dependências
+check_base_dependencies() {
+    local missing_deps=()
+    for dep in "${BASE_DEPENDENCIES[@]}"; do
+        if ! command -v "$dep" &> /dev/null; then
+            missing_deps+=("$dep")
+        fi
+    done
+
+    if [ ${#missing_deps[@]} -ne 0 ]; then
+        echo "❌ Dependências ausentes: ${missing_deps[*]}"
+        echo "Por favor, instale as dependências ausentes e execute o script novamente."
+        exit 1
+    fi
+}
 
 # Função para pedir confirmação ao usuário (interativo) ou mostrar ação padrão (não-interativo)
 ask_user() {
@@ -30,7 +54,7 @@ ask_user() {
     
     # Modo sempre interativo - perguntar ao usuário
     echo -n "$prompt: "
-    read response
+    read -r response
 
     # Se resposta for vazia, usar o padrão
     response=${response:-$default}
@@ -39,85 +63,67 @@ ask_user() {
     eval "$variable_name=\"$response\""
 }
 
-# Verificar se o script está sendo executado como root (sudo)
-if [ "$(id -u)" -eq 0 ]; then
-    echo "❌ ERRO: Este script não deve ser executado como root ou com sudo."
-    echo "   Por favor, execute sem sudo. O script solicitará elevação quando necessário."
-    exit 1
-fi
-
-# Configuração de variáveis e ambiente
-set -e
-
 # Detectar o sistema operacional
-case "$(uname -s)" in
-    Linux*) OS="linux" ;;
-    Darwin*) OS="darwin" ;;
-    CYGWIN*|MINGW*|MSYS*) OS="windows" ;;
-    *) OS="unknown" ;;
-esac
+detect_os() {
+    OS="$(uname -s)"
+    if [[ "$OS" == "CYGWIN" || "$OS" == "MINGW" || "$OS" == "MSYS" ]]; then
+        OS="windows"
+    elif [[ "$OS" == "Linux" ]]; then
+        OS="linux"
+    elif [[ "$OS" == "Darwin" ]]; then
+        OS="darwin"
+    else
+        OS="unknown"
+        echo "❌ Sistema operacional não suportado: $(uname -s)"
+        exit 1
+    fi
+    echo "Sistema operacional detectado: $OS"
+}
 
 # Verificar distribuição
-if [ "$OS" == "linux" ]; then
+detect_distribution() {
     DISTRO=""
-	if [ -r /etc/os-release ]; then
-		DISTRO="$(. /etc/os-release && echo "$ID")"
-	fi
-fi
+    if [ "$OS" == "linux" ]; then
+        if [ -r /etc/os-release ]; then
+            DISTRO="$(source /etc/os-release && echo "$ID")"
+        fi
+    fi
+}
 
 # Detectar a arquitetura
-ARCH_RAW=$(uname -m)
-case "$ARCH_RAW" in
-    x86_64) ARCH="amd64" ;;
-    amd64) ARCH="amd64" ;;
-    arm64) ARCH="arm64" ;;
-    aarch64) ARCH="arm64" ;;
-    *) ARCH="unknown" ;;
-esac
-
-echo "Sistema operacional detectado: $OS"
-echo "Arquitetura detectada: $ARCH"
-
-# Verificar se o sistema operacional é suportado
-if [ "$OS" == "unknown" ]; then
-    echo "❌ Sistema operacional não suportado: $(uname -s)"
-    exit 1
-fi
-
-# Verificar se a arquitetura é suportada
-if [ "$ARCH" == "unknown" ]; then
-    echo "❌ Arquitetura não suportada: $ARCH_RAW"
-    exit 1
-fi
-
-# Configurações e variáveis
-GIRUS_VERSION="v0.2.0"
+detect_arch() {
+    ARCH=$(uname -m)
+    if [[ "$ARCH" == "x86_64" ]]; then
+        ARCH="amd64"
+    elif [[ "$ARCH" == "aarch64" ]]; then
+        ARCH="arm64"
+    else
+        ARCH="unknown"
+        echo "❌ Arquitetura não suportada: $ARCH"
+        exit 1
+    fi
+    echo "Arquitetura detectada: $ARCH"
+}
 
 # Definir URL com base no sistema operacional e arquitetura
-if [ "$OS" == "windows" ]; then
-    BINARY_URL="https://github.com/badtuxx/girus-cli/releases/download/$GIRUS_VERSION/girus-$OS-$ARCH.exe"
-else
-    BINARY_URL="https://github.com/badtuxx/girus-cli/releases/download/$GIRUS_VERSION/girus-$OS-$ARCH"
-fi
-
-echo "URL de download: $BINARY_URL"
-ORIGINAL_DIR=$(pwd)
-TEMP_DIR=$(mktemp -d)
-trap 'rm -rf "$TEMP_DIR"' EXIT
-
-# Configurações e variáveis
-GIRUS_CODENAME="Maracatu"
-KIND_VERSION="0.27.0"
-DOWNLOAD_TOOL="none"
+define_binary_url() {
+    if [ "$OS" == "windows" ]; then
+        BINARY_URL="https://github.com/badtuxx/girus-cli/releases/download/$GIRUS_VERSION/girus-$OS-$ARCH.exe"
+    else
+        BINARY_URL="https://github.com/badtuxx/girus-cli/releases/download/$GIRUS_VERSION/girus-$OS-$ARCH"
+    fi
+    echo "URL de download: $BINARY_URL"
+}
 
 # Função para verificar se o comando curl ou wget está disponível
-check_download_tool() {
+define_download_tool() {
     if command -v curl &> /dev/null; then
-        echo "curl"
+        DOWNLOAD_TOOL="curl"
     elif command -v wget &> /dev/null; then
-        echo "wget"
+        DOWNLOAD_TOOL="wget"
     else
-        echo "none"
+        echo "❌ Nenhum dos comandos curl ou wget está disponível. Por favor, instale um deles."
+        exit 1
     fi
 }
 
@@ -128,13 +134,13 @@ install_docker() {
     if [[ "$OS" == "linux" && "$DISTRO" != "rocky" ]]; then
         # Linux (script de conveniência do Docker)
         echo "Baixando o script de instalação do Docker..."
-        curl -fsSL https://get.docker.com -o get-docker.sh
+        curl --progress-bar -fsSL https://get.docker.com -o get-docker.sh
         echo "Executando o script de instalação (será solicitada senha de administrador)..."
         sudo sh get-docker.sh
 
         # Adicionar usuário atual ao grupo docker
         echo "Adicionando usuário atual ao grupo docker..."
-        sudo usermod -aG docker $USER
+        sudo usermod -aG docker "$USER"
 
         # Iniciar o serviço
         echo "Iniciando o serviço Docker..."
@@ -152,7 +158,7 @@ install_docker() {
 
         # Adicionar usuário atual ao grupo docker
         echo "Adicionando usuário atual ao grupo docker..."
-        sudo usermod -aG docker $USER
+        sudo usermod -aG docker "$USER"
 
         # Iniciar o serviço
         echo "Iniciando o serviço Docker..."
@@ -192,7 +198,7 @@ install_kind() {
 
     if [ "$OS" == "linux" ] || [ "$OS" == "darwin" ]; then
         # Linux/Mac
-        curl -Lo ./kind https://kind.sigs.k8s.io/dl/v0.20.0/kind-$(uname)-${ARCH}
+        curl --progress-bar -Lo ./kind "https://kind.sigs.k8s.io/dl/$KIND_VERSION/kind-$(uname)-$ARCH"
         chmod +x ./kind
         sudo mv ./kind /usr/local/bin/kind
 
@@ -217,10 +223,9 @@ install_kind() {
 # Função para instalar Kubectl
 install_kubectl() {
     echo "Instalando Kubectl..."
-
     if [ "$OS" == "linux" ]; then
         # Linux
-        curl -LO "https://dl.k8s.io/release/$(curl -L -s https://dl.k8s.io/release/stable.txt)/bin/linux/${ARCH}/kubectl"
+        curl --progress-bar -LO "https://dl.k8s.io/release/$KUBECTL_VERSION/bin/linux/$ARCH/kubectl"
         chmod +x kubectl
         sudo mv kubectl /usr/local/bin/
 
@@ -229,7 +234,7 @@ install_kubectl() {
         if command -v brew &> /dev/null; then
             brew install kubectl
         else
-            curl -LO "https://dl.k8s.io/release/$(curl -L -s https://dl.k8s.io/release/stable.txt)/bin/darwin/${ARCH}/kubectl"
+            curl --progress-bar -LO "https://dl.k8s.io/release/$KUBECTL_VERSION/bin/darwin/$ARCH/kubectl"
             chmod +x kubectl
             sudo mv kubectl /usr/local/bin/
         fi
@@ -276,7 +281,7 @@ check_glibc_version() {
         fi
 
         # Converter versão para número para comparação
-        GLIBC_VERSION_NUM=$(echo $GLIBC_VERSION | awk -F. '{printf "%d.%02d", $1, $2}')
+        GLIBC_VERSION_NUM=$(echo "$GLIBC_VERSION" | awk -F. '{printf "%d.%02d", $1, $2}')
         MIN_GLIBC_VERSION_NUM=2.17
 
         if (( $(echo "$GLIBC_VERSION_NUM >= $MIN_GLIBC_VERSION_NUM" | bc -l) )); then
@@ -358,9 +363,6 @@ download_and_install() {
     echo "📥 Baixando o Girus CLI versão $GIRUS_VERSION para $OS-$ARCH..."
     cd "$TEMP_DIR"
 
-    # Verificar qual ferramenta de download está disponível
-    DOWNLOAD_TOOL=$(check_download_tool)
-
     if [ "$DOWNLOAD_TOOL" == "curl" ]; then
         echo "Usando curl para download de: $BINARY_URL"
         echo "Executando: curl -L --progress-bar \"$BINARY_URL\" -o girus"
@@ -368,16 +370,6 @@ download_and_install() {
             echo "❌ Erro no curl. Tentando com opções de debug..."
             curl -L -v "$BINARY_URL" -o girus
         fi
-    elif [ "$DOWNLOAD_TOOL" == "wget" ]; then
-        echo "Usando wget para download de: $BINARY_URL"
-        echo "Executando: wget --show-progress -q \"$BINARY_URL\" -O girus"
-        if ! wget --show-progress -q "$BINARY_URL" -O girus; then
-            echo "❌ Erro no wget. Tentando com opções de debug..."
-            wget -v "$BINARY_URL" -O girus
-        fi
-    else
-        echo "❌ Erro: curl ou wget não encontrados. Por favor, instale um deles e tente novamente."
-        exit 1
     fi
 
     # Verificar se o download foi bem-sucedido
@@ -444,17 +436,51 @@ verify_all_dependencies() {
         all_deps_ok=false
     fi
 
-    return $( [ "$all_deps_ok" = true ] && echo 0 || echo 1 )
+    return "$( [ "$all_deps_ok" = true ] && echo 0 || echo 1 )"
 }
 
 # Iniciar mensagem principal
 echo "=== Iniciando instalação do Girus CLI ==="
 
+# ==========================
+# Verificações iniciais
+# ==========================
+# Verificar se o script está sendo executado como root (sudo)
+if [ "$(id -u)" -eq 0 ]; then
+    echo "❌ ERRO: Este script não deve ser executado como root ou com sudo."
+    echo "   Por favor, execute sem sudo. O script solicitará elevação quando necessário."
+    exit 1
+fi
+
+# Verificar se o terminal é interativo
+if [ -t 0 ]; then
+    echo "Terminal interativo detectado."
+    IS_INTERACTIVE=1
+else
+    echo "Terminal não interativo detectado."
+    echo "Executando em modo não interativo."
+    IS_INTERACTIVE=0
+fi
+
+# ETAPA 1: Verificando Dependências Básicas
+echo -e "\n=== ETAPA 1: Verificando Dependências Básicas ==="
+# Verificar dependências básicas
+check_base_dependencies
+# Detectar o Sistema Operacional
+detect_os
+# Detectart a arquitetura
+detect_arch
+# Detectar a distribuição (Linux)
+detect_distribution
+# Definir a URL do binário com base no sistema operacional e arquitetura
+define_binary_url
 # Verificar e limpar instalações anteriores
 check_previous_install
+# Verificar a ferramenta de download
+define_download_tool
 
-# ETAPA 1: Verificar pré-requisitos - Docker
-echo "=== ETAPA 1: Verificando Docker ==="
+# ETAPA 2: Verificar pré-requisitos - Docker
+echo -e "\n=== ETAPA 2: Verificando Docker ==="
 if ! command -v docker &> /dev/null; then
     echo "Docker não está instalado."
     ask_user "Deseja instalar Docker automaticamente? (Linux apenas) (S/n): " "S" "INSTALL_DOCKER"
@@ -496,11 +522,11 @@ else
     echo "✅ Docker está instalado e em execução."
 fi
 
-# ETAPA 2: Verificar pré-requisitos - Kind
-echo "=== ETAPA 2: Verificando Kind ==="
+# ETAPA 3: Verificar pré-requisitos - Kind
+echo -e "\n=== ETAPA 3: Verificando Kind ==="
 if ! command -v kind &> /dev/null; then
     echo "Kind não está instalado."
-    ask_user "Deseja instalar Kind automaticamente? (S/n): " "S" "INSTALL_KIND"
+    ask_user "Deseja instalar Kind ($KIND_VERSION) automaticamente? (S/n): " "S" "INSTALL_KIND"
 
     if [[ "$INSTALL_KIND" =~ ^[Ss]$ ]]; then
         install_kind
@@ -513,11 +539,12 @@ else
     echo "✅ Kind já está instalado."
 fi
 
-# ETAPA 3: Verificar pré-requisitos - Kubectl
-echo "=== ETAPA 3: Verificando Kubectl ==="
+# ETAPA 4: Verificar pré-requisitos - Kubectl
+echo -e "\n=== ETAPA 4: Verificando Kubectl ==="
+KUBECTL_VERSION=$(curl -L -s https://dl.k8s.io/release/stable.txt)
 if ! command -v kubectl &> /dev/null; then
     echo "Kubectl não está instalado."
-    ask_user "Deseja instalar Kubectl automaticamente? (S/n): " "S" "INSTALL_KUBECTL"
+    ask_user "Deseja instalar Kubectl ($KUBECTL_VERSION) automaticamente? (S/n): " "S" "INSTALL_KUBECTL"
 
     if [[ "$INSTALL_KUBECTL" =~ ^[Ss]$ ]]; then
         install_kubectl
@@ -530,17 +557,15 @@ else
     echo "✅ Kubectl já está instalado."
 fi
 
-# ETAPA 4: Baixar e instalar o Girus CLI
-echo "=== ETAPA 4: Instalando Girus CLI ==="
+# ETAPA 5: Baixar e instalar o Girus CLI
+echo -e "\n=== ETAPA 5: Instalando Girus CLI ==="
 download_and_install
 
 # Voltar para o diretório original
 cd "$ORIGINAL_DIR"
 
 # Mensagem final de conclusão
-echo ""
-echo "===== INSTALAÇÃO CONCLUÍDA ====="
-echo ""
+echo -e "\n===== INSTALAÇÃO CONCLUÍDA =====\n"
 
 # Verificar todas as dependências
 verify_all_dependencies
