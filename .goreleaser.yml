@@ -1,0 +1,62 @@
+project_name: girus-cli
+version: 2
+
+# Prevents parallel builds from stepping on each others toes downloading modules
+before:
+  hooks:
+    - go mod tidy
+    - git --no-pager diff --exit-code go.mod go.sum
+
+gomod:
+  proxy: true
+
+sboms:
+  - artifacts: binary
+
+builds:
+  - id: girus-cli
+    binary: girus-cli-{{ .Os }}-{{ .Arch }}
+    no_unique_dist_dir: true
+    main: .
+    flags:
+      - -trimpath
+    mod_timestamp: '{{ .CommitTimestamp }}'
+    goos:
+      - linux
+      - darwin
+      - windows
+    goarch:
+      - amd64
+      - arm64
+    env:
+      - CGO_ENABLED=0
+
+signs:
+  # Keyless
+  - id: girus-cli
+    signature: "${artifact}-keyless.sig"
+    certificate: "${artifact}-keyless.pem"
+    cmd: cosign
+    args: ["sign-blob", "--output-signature", "${artifact}.sig", "--output-certificate", "${artifact}.pem", "${artifact}"]
+    artifacts: binary
+  - id: checksum
+    signature: "${artifact}.sig"
+    certificate: "${artifact}.pem"
+    cmd: cosign
+    args: ["sign-blob", "--output-signature", "${artifact}-keyless.sig", "--output-certificate", "${artifact}.pem", "${artifact}"]
+    artifacts: checksum
+
+archives:
+  - formats:
+      - binary
+    name_template: "{{ .Binary }}"
+    allow_different_binary_count: true
+
+checksum:
+  name_template: "{{ .ProjectName }}_checksums.txt"
+
+snapshot:
+  version_template: SNAPSHOT-{{ .ShortCommit }}
+
+changelog:
+  use: github-native

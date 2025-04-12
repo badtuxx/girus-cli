@@ -46,4 +46,4 @@ updates:
       - "docker"
     commit-message:
       prefix: "chore(deps)"
-      include: "scope" 
+      include: "scope"

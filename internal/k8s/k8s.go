@@ -3,7 +3,6 @@ package k8s
 import (
 	"bytes"
 	"fmt"
-	"io/ioutil"
 	"os"
 	"os/exec"
 	"path/filepath"
@@ -357,7 +356,7 @@ func startBackgroundCmd(cmd *exec.Cmd) error {
 		if homeDir != "" {
 			pidDir := filepath.Join(homeDir, ".girus")
 			os.MkdirAll(pidDir, 0755)
-			ioutil.WriteFile(filepath.Join(pidDir, "frontend.pid"),
+			os.WriteFile(filepath.Join(pidDir, "frontend.pid"),
 				[]byte(fmt.Sprintf("%d", cmd.Process.Pid)), 0644)
 		}
 

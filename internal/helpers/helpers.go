@@ -77,7 +77,7 @@ func CheckPortForwardNeeded() bool {
 				frontendNeeded = true
 			} else {
 				statusCode := strings.TrimSpace(out.String())
-				frontendNeeded = !(statusCode == "200" || statusCode == "301" || statusCode == "302")
+				frontendNeeded = (statusCode != "200" && statusCode != "301" && statusCode != "302")
 			}
 		}
 	}

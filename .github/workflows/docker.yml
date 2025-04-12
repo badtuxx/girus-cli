@@ -21,73 +21,20 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
 
-      - name: Create Dockerfile
-        run: |
-          cat > Dockerfile << 'EOF'
-          FROM golang:1.22-alpine AS builder
-
-          WORKDIR /app
-
-          # Copy go.mod and go.sum first to leverage Docker cache
-          COPY go.mod go.sum ./
-          RUN go mod download
-
-          # Copy the rest of the source code
-          COPY . .
-
-          # Build the application
-          ARG VERSION=dev
-          RUN CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build -o girus -ldflags="-X 'github.com/badtuxx/girus-cli/cmd.Version=${VERSION}'" ./main.go
-
-          # Use a minimal alpine image for the final container
-          FROM alpine:3.18
-
-          # Install necessary packages
-          RUN apk add --no-cache ca-certificates curl bash docker-cli
-
-          # Install kind and kubectl
-          RUN curl -Lo /usr/local/bin/kind https://kind.sigs.k8s.io/dl/v0.20.0/kind-linux-amd64 && \
-              chmod +x /usr/local/bin/kind && \
-              curl -Lo /usr/local/bin/kubectl "https://dl.k8s.io/release/$(curl -L -s https://dl.k8s.io/release/stable.txt)/bin/linux/amd64/kubectl" && \
-              chmod +x /usr/local/bin/kubectl
-
-          WORKDIR /app
-
-          # Copy the binary from the builder stage
-          COPY --from=builder /app/girus /usr/local/bin/girus
-
-          # Create entrypoint
-          ENTRYPOINT ["/usr/local/bin/girus"]
-
-          # Default command
-          CMD ["help"]
-          EOF
-
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@b5ca514318bd6ebac0fb2aedd5d36ec1b5c232a2 # v3.10.0
-
-      - name: Check Docker Hub credentials
-        id: dockerhub_check
-        run: |
-          if [ -n "${{ secrets.DOCKERHUB_USERNAME }}" ] && [ -n "${{ secrets.DOCKERHUB_TOKEN }}" ]; then
-            echo "has_dockerhub_credentials=true" >> $GITHUB_OUTPUT
-          else
-            echo "has_dockerhub_credentials=false" >> $GITHUB_OUTPUT
-            echo "::error::Docker Hub credentials not found. Please set DOCKERHUB_USERNAME and DOCKERHUB_TOKEN secrets."
-            exit 1
-          fi
 
       - name: Login to Docker Hub
         uses: docker/login-action@74a5d142397b4f367a81961eba4e8cd7edddf772 # v3.4.0
         with:
-          username: ${{ secrets.DOCKERHUB_USERNAME }}
+          username: linuxtips
           password: ${{ secrets.DOCKERHUB_TOKEN }}
 
       - name: Extract metadata for Docker
         id: meta
         uses: docker/metadata-action@902fa8ec7d6ecbf8d84d538b9b233a880e428804 # v5.7.0
         with:
-          images: ${{ secrets.DOCKERHUB_USERNAME }}/girus-cli
+          images: linuxtips/girus-cli
           tags: |
             type=sha,format=short
             type=raw,value=latest

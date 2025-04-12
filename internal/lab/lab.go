@@ -80,16 +80,17 @@ func AddLabFromFile(labFile string, verboseMode bool) {
 			fmt.Println("   O laboratório de Docker será instalado, mas requer Docker para funcionar corretamente.")
 			fmt.Println("   Para instalar o Docker:")
 
-			if runtime.GOOS == "darwin" {
+			switch runtime.GOOS {
+			case "darwin":
 				fmt.Println("\n   📦 macOS (via Colima):")
 				fmt.Println("      brew install colima docker")
 				fmt.Println("      colima start")
-			} else if runtime.GOOS == "linux" {
+			case "linux":
 				fmt.Println("\n   📦 Linux:")
 				fmt.Println("      curl -fsSL https://get.docker.com | bash")
 				fmt.Println("      sudo usermod -aG docker $USER")
 				fmt.Println("      sudo systemctl start docker")
-			} else {
+			default:
 				fmt.Println("\n   📦 Visite: https://www.docker.com/products/docker-desktop")
 			}
 

@@ -1,0 +1,81 @@
+name: Cut Release
+
+on:
+  push:
+    tags:
+      - "v*"
+
+concurrency: cut-release
+
+permissions: {}
+
+jobs:
+  release:
+    outputs:
+      hashes: ${{ steps.hash.outputs.hashes }}
+      tag_name: ${{ steps.tag.outputs.tag_name }}
+    runs-on: ubuntu-latest
+
+    permissions:
+      contents: write # needed to write releases
+      id-token: write # needed for keyless signing
+
+    steps:
+      - uses: jlumbroso/free-disk-space@54081f138730dfa15788a46383842cd2f914a1be # v1.3.1
+        with:
+          android: true
+          dotnet: true
+          haskell: true
+          large-packages: true
+          docker-images: true
+          swap-storage: true
+
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+        with:
+          fetch-depth: 0
+
+      - uses: actions/setup-go@3041bf56c941b39c61721a86cd11f3bb1338122a # v5.2.0
+        with:
+          go-version-file: './go.mod'
+          check-latest: true
+
+      - uses: sigstore/cosign-installer@d7d6bc7722e3daa8354c50bcb52f4837da5e9b6a
+
+      - uses: anchore/sbom-action/download-syft@f325610c9f50a54015d37c8d16cb3b0e2c8f4de0 # v0.18.0
+
+      - name: Set tag output
+        id: tag
+        run: echo "tag_name=${GITHUB_REF#refs/*/}" >> "$GITHUB_OUTPUT"
+
+      - name: Run GoReleaser
+        id: run-goreleaser
+        uses: goreleaser/goreleaser-action@9c156ee8a17a598857849441385a2041ef570552 # v6.3.0
+        with:
+          version: latest
+          args: release --clean --timeout 120m --parallelism 1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Generate subject
+        id: hash
+        env:
+          ARTIFACTS: "${{ steps.run-goreleaser.outputs.artifacts }}"
+        run: |
+          set -euo pipefail
+          checksum_file=$(echo "$ARTIFACTS" | jq -r '.[] | select (.type=="Checksum") | .path')
+          echo "hashes=$(cat $checksum_file | base64 -w0)" >> "$GITHUB_OUTPUT"
+
+  provenance:
+    needs:
+      - release
+
+    permissions:
+      actions: read # To read the workflow path.
+      id-token: write # To sign the provenance.
+      contents: write # To add assets to a release.
+
+    uses: slsa-framework/slsa-github-generator/.github/workflows/generator_generic_slsa3.yml@v2.1.0
+    with:
+      base64-subjects: "${{ needs.release.outputs.hashes }}"
+      upload-assets: true # upload to a new release
+      upload-tag-name: "${{ needs.release.outputs.tag_name }}"

@@ -56,7 +56,8 @@ Por padrão, o deployment embutido no binário é utilizado.`,
 			fmt.Println("\nO Docker é necessário para criar um cluster Kind. Instruções de instalação:")
 
 			// Detectar o sistema operacional para instruções específicas
-			if runtime.GOOS == "darwin" {
+			switch runtime.GOOS {
+			case "darwin":
 				// macOS
 				fmt.Println("\n📦 Para macOS, recomendamos usar Colima (alternativa leve ao Docker Desktop):")
 				fmt.Println("1. Instale o Homebrew caso não tenha:")
@@ -67,7 +68,7 @@ Por padrão, o deployment embutido no binário é utilizado.`,
 				fmt.Println("   colima start")
 				fmt.Println("\nAlternativamente, você pode instalar o Docker Desktop para macOS de:")
 				fmt.Println("https://www.docker.com/products/docker-desktop")
-			} else if runtime.GOOS == "linux" {
+			case "linux":
 				// Linux
 				fmt.Println("\n📦 Para Linux, use o script de instalação oficial:")
 				fmt.Println("   curl -fsSL https://get.docker.com | bash")
@@ -77,7 +78,7 @@ Por padrão, o deployment embutido no binário é utilizado.`,
 				fmt.Println("\nE inicie o serviço:")
 				fmt.Println("   sudo systemctl enable docker")
 				fmt.Println("   sudo systemctl start docker")
-			} else {
+			default:
 				// Windows ou outros sistemas
 				fmt.Println("\n📦 Visite https://www.docker.com/products/docker-desktop para instruções de instalação para seu sistema operacional")
 			}
@@ -91,15 +92,16 @@ Por padrão, o deployment embutido no binário é utilizado.`,
 		if err := dockerInfoCmd.Run(); err != nil {
 			fmt.Println("❌ O serviço Docker não está em execução")
 
-			if runtime.GOOS == "darwin" {
+			switch runtime.GOOS {
+			case "darwin":
 				fmt.Println("\nPara macOS com Colima:")
 				fmt.Println("   colima start")
 				fmt.Println("\nPara Docker Desktop:")
 				fmt.Println("   Inicie o aplicativo Docker Desktop")
-			} else if runtime.GOOS == "linux" {
+			case "linux":
 				fmt.Println("\nInicie o serviço Docker:")
 				fmt.Println("   sudo systemctl start docker")
-			} else {
+			default:
 				fmt.Println("\nInicie o Docker Desktop ou o serviço Docker apropriado para seu sistema.")
 			}
 
