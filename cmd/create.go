@@ -666,7 +666,7 @@ Por padrão, o deployment embutido no binário é utilizado.`,
 		fmt.Println("\n🔍 Verificando repositórios de laboratórios externos...")
 
 		// Aplicar laboratórios de repositórios externos
-		count, err := lab.LoadExternalLabs(verboseMode)
+		count, _, err := lab.LoadExternalLabs(verboseMode)
 		if err != nil {
 			fmt.Printf("⚠️  Aviso ao carregar laboratórios externos: %v\n", err)
 		} else if count > 0 {

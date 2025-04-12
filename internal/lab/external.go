@@ -366,16 +366,16 @@ func ApplyLabFromExternalRepo(repo config.ExternalLabRepository, labName string,
 }
 
 // LoadExternalLabs carrega laboratórios de repositórios externos
-func LoadExternalLabs(verboseMode bool) (int, error) {
+func LoadExternalLabs(verboseMode bool) (int, []string, error) {
 	// Obtém a lista de repositórios externos
 	repos, err := config.GetExternalRepositories()
 	if err != nil {
-		return 0, fmt.Errorf("erro ao carregar configuração de repositórios: %w", err)
+		return 0, nil, fmt.Errorf("erro ao carregar configuração de repositórios: %w", err)
 	}
 
 	if len(repos) == 0 {
 		// Nenhum repositório configurado
-		return 0, nil
+		return 0, nil, nil
 	}
 
 	// Conta o total de laboratórios aplicados
@@ -455,38 +455,5 @@ func LoadExternalLabs(verboseMode bool) (int, error) {
 		}
 	}
 
-	return totalApplied, nil
-}
-
-// ApplyExternalLabs processa todos os repositórios externos configurados
-func ApplyExternalLabs(verboseMode bool) (int, []string, error) {
-	// Obtém a lista de repositórios externos
-	repos, err := config.GetExternalRepositories()
-	if err != nil {
-		return 0, nil, fmt.Errorf("erro ao carregar configuração de repositórios: %w", err)
-	}
-
-	if len(repos) == 0 {
-		// Nenhum repositório configurado
-		return 0, nil, nil
-	}
-
-	// Lista para armazenar nomes de laboratórios aplicados
-	allAppliedLabs := []string{}
-
-	// Processa cada repositório
-	for _, repo := range repos {
-		applied, err := ProcessExternalRepo(repo, verboseMode)
-		if err != nil {
-			return len(allAppliedLabs), allAppliedLabs, fmt.Errorf("erro no repositório %s: %w", repo.URL, err)
-		}
-
-		// Adiciona os laboratórios aplicados à lista geral
-		for _, labName := range applied {
-			repoName := GetRepoNameFromURL(repo.URL)
-			allAppliedLabs = append(allAppliedLabs, fmt.Sprintf("%s (de %s)", labName, repoName))
-		}
-	}
-
-	return len(allAppliedLabs), allAppliedLabs, nil
+	return totalApplied, allAppliedLabs, nil
 }
