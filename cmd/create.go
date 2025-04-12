@@ -673,7 +673,6 @@ Por padrão, o deployment embutido no binário é utilizado.`,
 			fmt.Printf("✅ %d laboratórios externos aplicados com sucesso!\n", count)
 		} else {
 			fmt.Println("ℹ️  Nenhum repositório de laboratório externo configurado.")
-			fmt.Println("   Para adicionar, use 'girus create lab-repo --url https://github.com/exemplo/repositorio.git'")
 		}
 
 		// Aguardar os pods do Girus ficarem prontos
@@ -731,6 +730,9 @@ Por padrão, o deployment embutido no binário é utilizado.`,
 		// Instruções para laboratórios
 		fmt.Println("\n  • Para aplicar mais templates de laboratórios com o Girus:")
 		fmt.Println("    girus create lab -f caminho/para/lab.yaml")
+
+		fmt.Println("\n  • Para aplicar repositórios de laboratórios externos:")
+		fmt.Println("    girus create lab-repo --url https://github.com/usuario/repo.git")
 
 		fmt.Println("\n  • Para ver todos os laboratórios disponíveis:")
 		fmt.Println("    girus list labs")

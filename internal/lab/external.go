@@ -23,6 +23,9 @@ var BackendRestartNeeded = false
 
 // LabManifest representa a estrutura do arquivo de manifesto de labs
 type LabManifest struct {
+	Name        string     `yaml:"name"`
+	Description string     `yaml:"description"`
+	Labs        []LabEntry `yaml:"labs"`
 }
 
 // LabEntry representa um laboratório individual no manifesto
