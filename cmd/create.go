@@ -11,6 +11,8 @@ import (
 	"strings"
 	"time"
 
+	"github.com/badtuxx/girus-cli/internal/config"
+	"github.com/badtuxx/girus-cli/internal/git"
 	"github.com/badtuxx/girus-cli/internal/helpers"
 	"github.com/badtuxx/girus-cli/internal/k8s"
 	"github.com/badtuxx/girus-cli/internal/lab"
@@ -26,6 +28,10 @@ var (
 	labFile         string
 	skipPortForward bool
 	skipBrowser     bool
+	repoURL         string
+	repoBranch      string
+	manifestPath    string
+	autoApply       bool
 )
 
 var createCmd = &cobra.Command{
@@ -656,6 +662,19 @@ Por padrão, o deployment embutido no binário é utilizado.`,
 			}
 		}
 
+		// Após o deploy bem-sucedido, carregar laboratórios externos
+		fmt.Println("\n🔍 Verificando repositórios de laboratórios externos...")
+
+		// Aplicar laboratórios de repositórios externos
+		count, _, err := lab.LoadExternalLabs(verboseMode)
+		if err != nil {
+			fmt.Printf("⚠️  Aviso ao carregar laboratórios externos: %v\n", err)
+		} else if count > 0 {
+			fmt.Printf("✅ %d laboratórios externos aplicados com sucesso!\n", count)
+		} else {
+			fmt.Println("ℹ️  Nenhum repositório de laboratório externo configurado.")
+		}
+
 		// Aguardar os pods do Girus ficarem prontos
 		if err := k8s.WaitForPodsReady("girus", 5*time.Minute); err != nil {
 			fmt.Fprintf(os.Stderr, "Aviso: %v\n", err)
@@ -712,6 +731,9 @@ Por padrão, o deployment embutido no binário é utilizado.`,
 		fmt.Println("\n  • Para aplicar mais templates de laboratórios com o Girus:")
 		fmt.Println("    girus create lab -f caminho/para/lab.yaml")
 
+		fmt.Println("\n  • Para aplicar repositórios de laboratórios externos:")
+		fmt.Println("    girus create lab-repo --url https://github.com/usuario/repo.git")
+
 		fmt.Println("\n  • Para ver todos os laboratórios disponíveis:")
 		fmt.Println("    girus list labs")
 
@@ -738,9 +760,187 @@ var createLabCmd = &cobra.Command{
 	},
 }
 
+var createLabRepoCmd = &cobra.Command{
+	Use:   "lab-repo --url URL",
+	Short: "Adiciona um repositório com templates de laboratório",
+	Long:  "Adiciona um repositório Git contendo templates de laboratório para o Girus.\nO repositório deve conter um arquivo girus-labs.yaml na raiz que descreve os laboratórios disponíveis.",
+	Run: func(cmd *cobra.Command, args []string) {
+		// Verificar se a URL foi fornecida
+		if repoURL == "" {
+			fmt.Println("❌ Erro: É necessário fornecer a URL do repositório com a flag --url")
+			fmt.Println("\nExemplo:")
+			fmt.Println("  girus create lab-repo --url https://github.com/exemplo/labs.git")
+			os.Exit(1)
+		}
+
+		// Definir valores padrão
+		if repoBranch == "" {
+			repoBranch = "main"
+		}
+
+		if manifestPath == "" {
+			manifestPath = "girus-labs.yaml"
+		}
+
+		// Verificar se o repositório já existe
+		existingRepos, err := config.GetExternalRepositories()
+		if err != nil {
+			fmt.Printf("⚠️ Erro ao verificar repositórios existentes: %v\n", err)
+			// Continua mesmo com erro, assumindo que é um novo repositório
+		}
+
+		isUpdate := false
+		for _, repo := range existingRepos {
+			if repo.URL == repoURL {
+				isUpdate = true
+				break
+			}
+		}
+
+		if isUpdate {
+			fmt.Printf("🔄 Atualizando repositório de laboratórios: %s (branch: %s)\n", repoURL, repoBranch)
+		} else {
+			fmt.Printf("🔍 Adicionando repositório de laboratórios: %s (branch: %s)\n", repoURL, repoBranch)
+		}
+
+		// Criar barra de progresso para o processo de clonagem
+		bar := progressbar.NewOptions(100,
+			progressbar.OptionSetDescription("Clonando repositório..."),
+			progressbar.OptionSetWidth(80),
+			progressbar.OptionShowBytes(false),
+			progressbar.OptionSetPredictTime(false),
+			progressbar.OptionThrottle(65*time.Millisecond),
+			progressbar.OptionSetRenderBlankState(true),
+			progressbar.OptionSpinnerType(14),
+			progressbar.OptionFullWidth(),
+		)
+
+		// Tentar clonar o repositório para validar
+		go func() {
+			for i := 0; i < 100; i++ {
+				bar.Add(1)
+				time.Sleep(50 * time.Millisecond)
+			}
+		}()
+
+		repoPath, _, err := git.CloneRepository(repoURL, repoBranch)
+		if err != nil {
+			bar.Finish()
+			fmt.Println("❌ Erro ao clonar repositório:", err)
+			fmt.Println("\nVerifique se:")
+			fmt.Println("  • A URL do repositório está correta")
+			fmt.Println("  • O branch especificado existe")
+			fmt.Println("  • Você tem conexão com a internet")
+			os.Exit(1)
+		}
+
+		// Limpar o repositório clonado quando terminarmos
+		defer git.CleanupRepo(repoPath)
+		bar.Finish()
+
+		// Verificar se o arquivo de manifesto existe
+		if !git.FileExists(repoPath, manifestPath) {
+			fmt.Printf("❌ Arquivo de manifesto '%s' não encontrado no repositório\n", manifestPath)
+			fmt.Println("\nO repositório deve conter um arquivo que descreve os laboratórios disponíveis.")
+			fmt.Println("Por padrão, este arquivo é 'girus-labs.yaml' na raiz do repositório.")
+			fmt.Println("\nVocê pode especificar um caminho personalizado com --manifest-path.")
+			fmt.Println("Exemplo: girus create lab-repo --url URL --manifest-path config/labs.yaml")
+			os.Exit(1)
+		}
+
+		// Ler e validar o manifesto
+		manifestData, err := git.GetFile(repoPath, manifestPath)
+		if err != nil {
+			fmt.Printf("❌ Erro ao ler arquivo de manifesto: %v\n", err)
+			os.Exit(1)
+		}
+
+		manifest, err := lab.ParseLabManifest(manifestData)
+		if err != nil {
+			fmt.Printf("❌ Erro ao processar manifesto: %v\n", err)
+			os.Exit(1)
+		}
+
+		if err := lab.ValidateManifest(manifest); err != nil {
+			fmt.Printf("❌ Manifesto inválido: %v\n", err)
+			os.Exit(1)
+		}
+
+		// Adicionar ou atualizar o repositório na configuração
+		repo := config.ExternalLabRepository{
+			URL:          repoURL,
+			Branch:       repoBranch,
+			ManifestPath: manifestPath,
+			Description:  manifest.Description,
+		}
+
+		if err := config.AddRepository(repo); err != nil {
+			fmt.Printf("❌ Erro ao salvar a configuração: %v\n", err)
+			os.Exit(1)
+		}
+
+		// Mostrar informações sobre os labs encontrados
+		if isUpdate {
+			fmt.Printf("\n✅ Repositório de laboratórios atualizado com sucesso!\n")
+		} else {
+			fmt.Printf("\n✅ Repositório de laboratórios adicionado com sucesso!\n")
+		}
+
+		fmt.Printf("\n📚 Nome: %s\n", manifest.Name)
+		if manifest.Description != "" {
+			fmt.Printf("📝 Descrição: %s\n", manifest.Description)
+		}
+		fmt.Printf("\n🧪 Laboratórios encontrados (%d):\n", len(manifest.Labs))
+		for _, labEntry := range manifest.Labs {
+			fmt.Printf("  • %s", labEntry.Name)
+			if labEntry.Description != "" {
+				fmt.Printf(" - %s", labEntry.Description)
+			}
+			fmt.Println()
+		}
+
+		// Perguntar ao usuário se deseja aplicar os laboratórios agora
+		if !autoApply {
+			fmt.Print("\nDeseja aplicar os laboratórios agora? [S/n]: ")
+			reader := bufio.NewReader(os.Stdin)
+			response, _ := reader.ReadString('\n')
+			response = strings.ToLower(strings.TrimSpace(response))
+
+			if response == "n" || response == "não" || response == "nao" || response == "no" {
+				fmt.Println("\n📋 PRÓXIMOS PASSOS:")
+				fmt.Println("  • Para aplicar os laboratórios manualmente, execute:")
+				fmt.Println("    girus create lab-repo --url", repoURL, "--apply")
+				return
+			}
+		}
+
+		// Aplicar os laboratórios automaticamente
+		fmt.Println("\n🚀 Aplicando laboratórios do repositório...")
+		applied, err := lab.ProcessExternalRepo(repo, verboseMode)
+		if err != nil {
+			fmt.Printf("❌ Erro ao processar repositório: %v\n", err)
+			os.Exit(1)
+		}
+
+		fmt.Printf("\n✅ %d laboratórios aplicados com sucesso!\n", len(applied))
+		fmt.Println("   Os laboratórios estão disponíveis no Girus.")
+
+		// Se nenhum laboratório foi aplicado com sucesso
+		if len(applied) == 0 {
+			fmt.Println("\n⚠️  Nenhum laboratório foi aplicado.")
+			fmt.Println("   Verifique se os arquivos de laboratório no manifesto existem no repositório.")
+		}
+
+		fmt.Println("\n📋 PRÓXIMOS PASSOS:")
+		fmt.Println("  • Acesse a interface web do Girus para ver seus novos laboratórios")
+		fmt.Println("  • Execute 'girus list labs' para ver todos os laboratórios disponíveis")
+	},
+}
+
 func init() {
 	createCmd.AddCommand(createClusterCmd)
 	createCmd.AddCommand(createLabCmd)
+	createCmd.AddCommand(createLabRepoCmd)
 
 	// Flags para createClusterCmd
 	createClusterCmd.Flags().StringVarP(&deployFile, "file", "f", "", "Arquivo YAML para deployment do Girus (opcional)")
@@ -751,6 +951,16 @@ func init() {
 	// Flags para createLabCmd
 	createLabCmd.Flags().StringVarP(&labFile, "file", "f", "", "Arquivo de manifesto do laboratório (ConfigMap)")
 	createLabCmd.Flags().BoolVarP(&verboseMode, "verbose", "v", false, "Modo detalhado com output completo em vez da barra de progresso")
+
+	// Flags para createLabRepoCmd
+	createLabRepoCmd.Flags().StringVarP(&repoURL, "url", "u", "", "URL do repositório Git com templates de laboratórios")
+	createLabRepoCmd.Flags().StringVarP(&repoBranch, "branch", "b", "main", "Branch do repositório a ser usado")
+	createLabRepoCmd.Flags().StringVarP(&manifestPath, "manifest-path", "m", "girus-labs.yaml", "Caminho para o arquivo de manifesto dentro do repositório")
+	createLabRepoCmd.Flags().BoolVarP(&verboseMode, "verbose", "v", false, "Modo detalhado com output completo")
+	createLabRepoCmd.Flags().BoolVarP(&autoApply, "apply", "a", false, "Aplicar automaticamente os laboratórios sem perguntar")
+
+	// Marcar flags obrigatórias
+	createLabRepoCmd.MarkFlagRequired("url")
 
 	// definir o nome do cluster como "girus" sempre
 	clusterName = "girus"

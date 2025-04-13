@@ -1,3 +1,4 @@
+// Package lab implementa funcionalidades relacionadas aos laboratórios do Girus
 package lab
 
 import (
@@ -15,7 +16,7 @@ import (
 	"github.com/schollz/progressbar/v3"
 )
 
-// addLabFromFile adiciona um novo template de laboratório a partir de um arquivo
+// AddLabFromFile adiciona um novo template de laboratório a partir de um arquivo
 func AddLabFromFile(labFile string, verboseMode bool) {
 	// Verificar se o arquivo existe
 	if _, err := os.Stat(labFile); os.IsNotExist(err) {
