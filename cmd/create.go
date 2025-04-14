@@ -25,6 +25,7 @@ var (
 	deployFile      string
 	clusterName     string
 	verboseMode     bool
+	containerEngine string
 	labFile         string
 	skipPortForward bool
 	skipBrowser     bool
@@ -48,17 +49,16 @@ var createClusterCmd = &cobra.Command{
 	Long: `Cria um cluster Kind com o nome "girus" e implanta todos os componentes necessários.
 Por padrão, o deployment embutido no binário é utilizado.`,
 	Run: func(cmd *cobra.Command, args []string) {
-		// Verificar se o Docker está instalado e funcionando
+		// Verificar se o containerEngine está instalado e funcionando
 		fmt.Println("🔄 Verificando pré-requisitos...")
-		dockerCmd := exec.Command("docker", "--version")
-		if err := dockerCmd.Run(); err != nil {
-			fmt.Println("❌ Docker não encontrado ou não está em execução")
-			fmt.Println("\nO Docker é necessário para criar um cluster Kind. Instruções de instalação:")
+		containerEngineCmd := exec.Command(containerEngine, "--version")
+		if err := containerEngineCmd.Run(); err != nil {
+			fmt.Println("❌ " + containerEngine + " não encontrado ou não está em execução")
+			fmt.Println("\nO " + containerEngine + " é necessário para criar um cluster Kind. Instruções de instalação:")
 
 			// Detectar o sistema operacional para instruções específicas
-			switch runtime.GOOS {
-			case "darwin":
-				// macOS
+			if runtime.GOOS == "darwin" && containerEngine == "docker" {
+				// macOS docker
 				fmt.Println("\n📦 Para macOS, recomendamos usar Colima (alternativa leve ao Docker Desktop):")
 				fmt.Println("1. Instale o Homebrew caso não tenha:")
 				fmt.Println("   /bin/bash -c \"$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)\"")
@@ -68,8 +68,8 @@ Por padrão, o deployment embutido no binário é utilizado.`,
 				fmt.Println("   colima start")
 				fmt.Println("\nAlternativamente, você pode instalar o Docker Desktop para macOS de:")
 				fmt.Println("https://www.docker.com/products/docker-desktop")
-			case "linux":
-				// Linux
+			} else if runtime.GOOS == "linux" && containerEngine == "docker" {
+				// Linux docker
 				fmt.Println("\n📦 Para Linux, use o script de instalação oficial:")
 				fmt.Println("   curl -fsSL https://get.docker.com | bash")
 				fmt.Println("\nApós a instalação, adicione seu usuário ao grupo docker para evitar usar sudo:")
@@ -78,38 +78,67 @@ Por padrão, o deployment embutido no binário é utilizado.`,
 				fmt.Println("\nE inicie o serviço:")
 				fmt.Println("   sudo systemctl enable docker")
 				fmt.Println("   sudo systemctl start docker")
-			default:
+			}
+			if runtime.GOOS == "darwin" && containerEngine == "podman" {
+				// macOS podman
+				fmt.Println("\n📦 Para macOS, recomendamos Podman:")
+				fmt.Println("1. Instale o Homebrew caso não tenha:")
+				fmt.Println("   /bin/bash -c \"$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)\"")
+				fmt.Println("2. Instale o Podman")
+				fmt.Println("   brew install podman")
+				fmt.Println("3. Inicie o Podman:")
+				fmt.Println("   podman machine init")
+				fmt.Println("   podman machine start")
+			} else if runtime.GOOS == "linux" && containerEngine == "podman" {
+				// Linux podman
+				fmt.Println("\n📦 Para Linux, use o script de instalação oficial:")
+				fmt.Println("   curl -fsSL https://get.docker.com | bash")
+				fmt.Println("\nE inicie o serviço:")
+				fmt.Println("   sudo systemctl enable podman")
+				fmt.Println("   sudo systemctl start podman")
+				fmt.Println("\nOpicional: Após a instalação, para utilizar podman, rootless evitando sudo:")
+				fmt.Println("   Siga as instruções do site oficial:")
+				fmt.Println("   https://github.com/containers/podman/blob/main/docs/tutorials/rootless_tutorial.md")
+			} else if containerEngine == "podman" {
+				// Windows ou outros sistemas
+				fmt.Println("\n📦 Visite https://github.com/containers/podman/blob/main/docs/tutorials/podman-for-windows.md para instruções de instalação para seu sistema operacional")
+			} else {
 				// Windows ou outros sistemas
 				fmt.Println("\n📦 Visite https://www.docker.com/products/docker-desktop para instruções de instalação para seu sistema operacional")
 			}
 
-			fmt.Println("\nApós instalar o Docker, execute novamente este comando.")
+			fmt.Println("\nApós instalar o " + containerEngine + " execute novamente este comando.")
 			os.Exit(1)
 		}
 
-		// Verificar se o serviço Docker está rodando
-		dockerInfoCmd := exec.Command("docker", "info")
-		if err := dockerInfoCmd.Run(); err != nil {
-			fmt.Println("❌ O serviço Docker não está em execução")
+		// Verificar se o serviço containerEngine está rodando
+		containerEngineInfoCmd := exec.Command(containerEngine, "info")
+		if err := containerEngineInfoCmd.Run(); err != nil {
+			fmt.Println("❌ O serviço " + containerEngine + " não está em execução")
 
-			switch runtime.GOOS {
-			case "darwin":
+			if runtime.GOOS == "darwin" && containerEngine == "docker" {
 				fmt.Println("\nPara macOS com Colima:")
 				fmt.Println("   colima start")
 				fmt.Println("\nPara Docker Desktop:")
 				fmt.Println("   Inicie o aplicativo Docker Desktop")
-			case "linux":
+			} else if runtime.GOOS == "darwin" && containerEngine == "podman" {
+				fmt.Println("\nPara Podman:")
+				fmt.Println("   Inicie a machine com: podman machine start")
+			} else if runtime.GOOS == "linux" && containerEngine == "docker" {
 				fmt.Println("\nInicie o serviço Docker:")
 				fmt.Println("   sudo systemctl start docker")
-			default:
-				fmt.Println("\nInicie o Docker Desktop ou o serviço Docker apropriado para seu sistema.")
+			} else if runtime.GOOS == "linux" && containerEngine == "podman" {
+				fmt.Println("\nInicie o serviço Podman:")
+				fmt.Println("   sudo systemctl start podman")
+			} else {
+				fmt.Println("\nInicie o serviço de containers apropriado para seu sistema.")
 			}
 
-			fmt.Println("\nApós iniciar o Docker, execute novamente este comando.")
+			fmt.Println("\nApós iniciar o " + containerEngine + ", execute novamente este comando.")
 			os.Exit(1)
 		}
 
-		fmt.Println("✅ Docker detectado e funcionando")
+		fmt.Println("✅ " + containerEngine + " detectado e funcionando")
 
 		// Verificar silenciosamente se o cluster já existe
 		checkCmd := exec.Command("kind", "get", "clusters")
@@ -219,7 +248,7 @@ Por padrão, o deployment embutido no binário é utilizado.`,
 			if err := createClusterCmd.Run(); err != nil {
 				fmt.Fprintf(os.Stderr, "❌ Erro ao criar o cluster Girus: %v\n", err)
 				fmt.Println("   Possíveis causas:")
-				fmt.Println("   • Docker não está em execução")
+				fmt.Println("   • " + containerEngine + " não está em execução")
 				fmt.Println("   • Permissões insuficientes")
 				fmt.Println("   • Conflito com cluster existente")
 				os.Exit(1)
@@ -278,7 +307,7 @@ Por padrão, o deployment embutido no binário é utilizado.`,
 					fmt.Println("   Erro: Já existe um cluster com o nome 'girus' no sistema.")
 					fmt.Println("   Por favor, exclua-o primeiro com 'kind delete cluster --name girus'")
 				} else if strings.Contains(errMsg, "permission denied") {
-					fmt.Println("   Erro: Permissão negada. Verifique as permissões do Docker.")
+					fmt.Println("   Erro: Permissão negada. Verifique as permissões do " + containerEngine + ".")
 				} else if strings.Contains(errMsg, "Cannot connect to the Docker daemon") {
 					fmt.Println("   Erro: Não foi possível conectar ao serviço Docker.")
 					fmt.Println("   Verifique se o Docker está em execução com 'systemctl status docker'")
@@ -947,6 +976,8 @@ func init() {
 	createClusterCmd.Flags().BoolVarP(&verboseMode, "verbose", "v", false, "Modo detalhado com output completo em vez da barra de progresso")
 	createClusterCmd.Flags().BoolVarP(&skipPortForward, "skip-port-forward", "", false, "Não perguntar sobre configurar port-forwarding")
 	createClusterCmd.Flags().BoolVarP(&skipBrowser, "skip-browser", "", false, "Não abrir o navegador automaticamente")
+
+	createClusterCmd.Flags().StringVarP(&containerEngine, "container-engine", "e", "docker", "Engine de container (docker ou podman)")
 
 	// Flags para createLabCmd
 	createLabCmd.Flags().StringVarP(&labFile, "file", "f", "", "Arquivo de manifesto do laboratório (ConfigMap)")
