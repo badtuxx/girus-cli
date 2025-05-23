@@ -29,12 +29,6 @@ var listClustersCmd = &cobra.Command{
 	Short: "Lista os clusters Kind disponíveis",
 	Long:  "Lista todos os clusters Kind disponíveis no sistema, destacando os que executam o Girus.",
 	Run: func(cmd *cobra.Command, args []string) {
-		// Criar formatadores de cores
-		green := color.New(color.FgGreen).SprintFunc()
-		red := color.New(color.FgRed).SprintFunc()
-		cyan := color.New(color.FgCyan).SprintFunc()
-		magenta := color.New(color.FgMagenta).SprintFunc()
-		headerColor := color.New(color.FgCyan, color.Bold).SprintFunc()
 
 		fmt.Println(headerColor("CLUSTERS KIND"))
 		fmt.Println(strings.Repeat("─", 80))

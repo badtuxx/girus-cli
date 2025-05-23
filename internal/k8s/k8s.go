@@ -2,7 +2,9 @@ package k8s
 
 import (
 	"bytes"
+	"context"
 	"fmt"
+	"k8s.io/utils/ptr"
 	"os"
 	"os/exec"
 	"path/filepath"
@@ -11,7 +13,92 @@ import (
 
 	"github.com/fatih/color"
 	"github.com/schollz/progressbar/v3"
+	corev1 "k8s.io/api/core/v1"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/client-go/kubernetes"
+	"k8s.io/client-go/tools/clientcmd"
+	"k8s.io/client-go/util/homedir"
 )
+
+// KubernetesClient wraper do cliente Kubernetes
+type KubernetesClient struct {
+	clientset *kubernetes.Clientset
+}
+
+type DeploymentStatus struct {
+	Name      string
+	Namespace string
+	Ready     bool
+}
+
+// NewKubernetesClient cria um novo cliente Kubernetes
+func NewKubernetesClient() (*KubernetesClient, error) {
+	// Path padrão do arquivo kubeconfig
+	var kubeconfig string
+	if home := homedir.HomeDir(); home != "" {
+		kubeconfig = filepath.Join(home, ".kube", "config")
+	}
+
+	// Cria a configuração a partir do arquivo kubeconfig
+	config, err := clientcmd.BuildConfigFromFlags("", kubeconfig)
+	if err != nil {
+		return nil, fmt.Errorf("falha ao criar configuração: %w", err)
+	}
+
+	// Cria o clientset
+	clientset, err := kubernetes.NewForConfig(config)
+	if err != nil {
+		return nil, fmt.Errorf("falha ao criar o clientset: %w", err)
+	}
+
+	return &KubernetesClient{clientset: clientset}, nil
+}
+
+// IsPodRunning checa se um pod está em execução
+func (k *KubernetesClient) IsPodRunning(ctx context.Context, namespace, podName string) (bool, error) {
+	pod, err := k.clientset.CoreV1().Pods(namespace).Get(ctx, podName, metav1.GetOptions{})
+	if err != nil {
+		return false, fmt.Errorf("falha ao checar o pod %s no namespace do GIRUS %s: %w", podName, namespace, err)
+	}
+
+	// Checa se o pod está em fase de execução
+	return pod.Status.Phase == corev1.PodRunning, nil
+}
+
+// ListRunningPods retorna todos os pods em execução num determinado namespace
+func (k *KubernetesClient) ListRunningPods(ctx context.Context, namespace string) ([]string, error) {
+	pods, err := k.clientset.CoreV1().Pods(namespace).List(ctx, metav1.ListOptions{
+		FieldSelector: "status.phase=Running",
+	})
+	if err != nil {
+		return nil, fmt.Errorf("falha ao listar todos os pods rodando no namespace do GIRUS %s: %w", namespace, err)
+	}
+
+	var runningPods []string
+	for _, pod := range pods.Items {
+		runningPods = append(runningPods, pod.Name)
+	}
+
+	return runningPods, nil
+}
+
+func (k *KubernetesClient) ScaleDeploy(ctx context.Context, namespace, name string, replicas int32) error {
+	fmt.Printf("Escalonando deployment %s para %d replicas...\n", name, replicas)
+	deploy, err := k.clientset.AppsV1().Deployments(namespace).Get(ctx, name, metav1.GetOptions{})
+	if err != nil {
+		_ = fmt.Errorf("falha ao buscar pelo deploy %s: %w", name, err)
+		return err
+	}
+	// Escala o deployment para o numero replicas desejado
+	deploy.Spec.Replicas = ptr.To(replicas)
+	_, err = k.clientset.AppsV1().Deployments(namespace).Update(ctx, deploy, metav1.UpdateOptions{})
+	if err != nil {
+		_ = fmt.Errorf("falha ao atualizar o deploy %s: %w", name, err)
+		return err
+	}
+
+	return nil
+}
 
 // waitForPodsReady espera até que os pods do Girus (backend e frontend) estejam prontos
 func WaitForPodsReady(namespace string, timeout time.Duration) error {

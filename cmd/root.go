@@ -82,6 +82,8 @@ Use "{{magenta "girus [command] --help"}}" for more information about a command.
 	rootCmd.AddCommand(repoCmd)
 	rootCmd.AddCommand(statusCmd)
 	rootCmd.AddCommand(versionCmd)
+	rootCmd.AddCommand(stopCmd)
+	rootCmd.AddCommand(startCmd)
 
 	// Não adicionar updateCmd aqui, pois já é adicionado no update.go
 
