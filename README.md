@@ -206,7 +206,7 @@ GIRUS (GIRUS Is Really Useful System) é uma ferramenta CLI desenvolvida pela LI
 ### Usando o script de instalação
 
 ```bash
-curl -sSL https://raw.githubusercontent.com/badtuxx/girus-cli/main/install/install.sh | bash
+curl -sSL https://raw.githubusercontent.com/badtuxx/girus-cli/main/install.sh | bash
 ```
 
 ### Usando o Makefile
