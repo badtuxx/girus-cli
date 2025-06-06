@@ -278,3 +278,12 @@ roleRef:
   kind: ClusterRole
   name: cluster-admin
   apiGroup: rbac.authorization.k8s.io
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: progresso.yaml
+  namespace: girus
+data:
+  progress: |
+    labs:
