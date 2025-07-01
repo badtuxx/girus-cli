@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"context"
 	"fmt"
+	"gopkg.in/yaml.v3"
 	"k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/apimachinery/pkg/util/intstr"
 	"k8s.io/utils/ptr"
@@ -13,6 +14,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/badtuxx/girus-cli/internal/common"
 	"github.com/fatih/color"
 	"github.com/schollz/progressbar/v3"
 	appsv1 "k8s.io/api/apps/v1"
@@ -619,4 +621,60 @@ func SetupPortForward(namespace string) error {
 	}
 
 	return nil
+}
+
+// UnmarshalConfigMapData Faz o parse dos dados do campo data do ConfigMap para um tipo genérico (T)
+func UnmarshalConfigMapData[T any](data string) (T, error) {
+	var result T
+	if err := yaml.Unmarshal([]byte(data), &result); err != nil {
+		return result, fmt.Errorf("falha ao fazer unmarshal do data: %w", err)
+	}
+	return result, nil
+}
+
+// GetConfigMapDataByKey Retorna o conteúdo do campo data de um ConfigMap
+func (k *KubernetesClient) GetConfigMapDataByKey(ctx context.Context, namespace, name, key string) (string, error) {
+	configMap, err := k.clientset.CoreV1().ConfigMaps(namespace).Get(ctx, name, metav1.GetOptions{})
+	if err != nil {
+		return "", fmt.Errorf("falha ao pegar o ConfigMap %s: %w", name, err)
+	}
+
+	data, exists := configMap.Data[key]
+	if !exists {
+		return "", fmt.Errorf("chave (key) %s não encontrada no ConfigMap %s", key, name)
+	}
+
+	return data, nil
+}
+
+// GetProgressFromConfigMap retrieves lab progress from a ConfigMap
+func (k *KubernetesClient) GetProgressFromConfigMap(ctx context.Context, name string) (common.Progress, error) {
+	// First, retrieve the specific data key from the ConfigMap
+	progressData, err := k.GetConfigMapDataByKey(ctx, "girus", name, "progress")
+	if err != nil {
+		return common.Progress{}, fmt.Errorf("falha ao coletar os dados de progresso: %w", err)
+	}
+
+	// Then unmarshal the data into the LabProgress structure
+	progress, err := UnmarshalConfigMapData[common.Progress](progressData)
+	if err != nil {
+		return common.Progress{}, fmt.Errorf("falha ao fazer parse/unmarshal dos dados de progresso do ConfigMap: %w", err)
+	}
+
+	return progress, nil
+}
+
+func (k *KubernetesClient) GetAllLabs(ctx context.Context) ([]common.Lab, error) {
+	data, err := k.GetProgressFromConfigMap(ctx, "progresso.yaml")
+	if err != nil {
+		fmt.Println(err)
+		return nil, err
+	}
+
+	var labs []common.Lab
+	for _, status := range data.Labs {
+		labs = append(labs, common.Lab{Name: status.Name, Status: status.Status})
+	}
+
+	return labs, nil
 }

@@ -2,9 +2,11 @@ package cmd
 
 import (
 	"bytes"
+	"context"
 	"encoding/json"
 	"fmt"
 	"github.com/badtuxx/girus-cli/internal/common"
+	"github.com/badtuxx/girus-cli/internal/k8s"
 	"os/exec"
 	"strconv"
 	"strings"
@@ -166,6 +168,25 @@ var statusCmd = &cobra.Command{
 		} else {
 			fmt.Println("\n" + headerColor("Laboratórios Instalados:") + " Nenhum")
 			fmt.Println("   Use " + cyan("'girus lab install <nome-do-lab>'") + " para instalar um laboratório")
+		}
+
+		// Reporta o status dos laboratories
+		client, err := k8s.NewKubernetesClient()
+		if err != nil {
+			fmt.Println("Erro ao criar o cliente Kubernetes:", err)
+			return
+		}
+		laboratorios, _ := client.GetAllLabs(context.Background())
+		fmt.Println()
+		fmt.Printf("%s\n", headerColor("Progresso dos Laboratórios:"))
+		for _, lab := range laboratorios {
+			fmt.Printf("%s: ", lab.Name)
+			if lab.Status == "in-progress" {
+				fmt.Printf("⏳ %s\n", magenta(lab.Status))
+			} else {
+				fmt.Printf("✅ %s\n", green(lab.Status))
+			}
+
 		}
 
 		// Obter uso de recursos
