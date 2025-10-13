@@ -385,16 +385,13 @@ download_and_install() {
             echo "$(t '❌ Erro no curl. Tentando com opções de debug...' '❌ Error en curl. Probando con opciones de depuración...')"
             curl -L -v "$BINARY_URL" -o girus
         fi
-    elif [ "$DOWNLOAD_TOOL" == "wget" ]; then
+    else
         echo "$(t 'Usando wget para download de: $BINARY_URL' 'Usando wget para descargar de: $BINARY_URL')"
         echo "$(t 'Executando: wget --show-progress -q \"$BINARY_URL\" -O girus' 'Ejecutando: wget --show-progress -q \"$BINARY_URL\" -O girus')"
         if ! wget --show-progress -q "$BINARY_URL" -O girus; then
             echo "$(t '❌ Erro no wget. Tentando com opções de debug...' '❌ Error en wget. Probando con opciones de depuración...')"
             wget -v "$BINARY_URL" -O girus
         fi
-    else
-        echo "$(t '❌ Erro: curl ou wget não encontrados. Por favor, instale um deles e tente novamente.' '❌ Error: curl o wget no encontrados. Por favor, instala uno de ellos e inténtalo de nuevo.')"
-        exit 1
     fi
 
     # Verificar se o download foi bem-sucedido
@@ -469,6 +466,32 @@ echo "$(t '=== Iniciando instalação do Girus CLI ===' '=== Iniciando instalaci
 
 # Verificar e limpar instalações anteriores
 check_previous_install
+
+# Verificando pacotes necessarios para instalação
+echo "$(t '=== Verificando pacotes necessários ===' '=== Verificando paquetes requeridos ===')"
+
+
+CHECK=$(check_download_tool)
+if [ "$CHECK" == "none" ]; then
+    echo "$(t '❌ Erro: curl ou wget não encontrados. Por favor, instale um deles e tente novamente.' '❌ Error: curl o wget no encontrados. Instala uno de ellos y ejecuta este script nuevamente.')"
+    exit 1
+else
+    echo "$(t '✅ $CHECK encontrado.' '✅ $CHECK encontrado.')"
+fi
+
+# Checa se bc está instalado para comparação numérica
+
+if command -v bc &> /dev/null; then
+    echo "$(t 'Pacote bc encontrado.' 'Paquete bc encontrado')"
+else
+    echo "$(t 'Comando bc não encontrado. Instalando:' 'Comando bc no encontrado. Instalando')"
+    case "$DISTRO" in
+    "debian") sudo apt install bc -y;;
+    "rhel" | "fedora" | "rocky") sudo yum install bc -y;;
+    "cachyos") sudo pacman -S --noconfirm bc ;;
+    *) echo "$(t '❌ Não foi possível instalar o pacote bc. Instale e execute novamente.' '❌ No se pudo instalar el paquete bc. Instálelo ejecuta este script nuevamente.')" && exit 1 ;;
+    esac
+fi   
 
 # ETAPA 1: Verificar pré-requisitos - Docker
 echo "$(t '=== ETAPA 1: Verificando Docker ===' '=== ETAPA 1: Verificando Docker ===')"
