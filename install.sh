@@ -468,28 +468,28 @@ echo "$(t '=== Iniciando instalação do Girus CLI ===' '=== Iniciando instalaci
 check_previous_install
 
 # Verificando pacotes necessarios para instalação
-echo "=== Verificando pacotes necessários ==="
+echo "$(t '=== Verificando pacotes necessários ===' '=== Verificando paquetes requeridos ===')"
+
 
 CHECK=$(check_download_tool)
 if [ "$CHECK" == "none" ]; then
-    echo "❌ Erro: curl ou wget não encontrados. Por favor, instale um deles e tente novamente."
+    echo "$(t '❌ Erro: curl ou wget não encontrados. Por favor, instale um deles e tente novamente.' '❌ Error: curl o wget no encontrados. Instala uno de ellos y ejecuta este script nuevamente.')"
     exit 1
 else
-    echo "✅ $CHECK encontrado."
+    echo "$(t '✅ $CHECK encontrado.' '✅ $CHECK encontrado.')"
 fi
 
 # Checa se bc está instalado para comparação numérica
 
 if command -v bc &> /dev/null; then
-    echo "Pacote bc encontrado."
-    return 0
+    echo "$(t 'Pacote bc encontrado.' 'Paquete bc encontrado')"
 else
-    echo "Comando bc não encontrado. Instalando:"
+    echo "$(t 'Comando bc não encontrado. Instalando:' 'Comando bc no encontrado. Instalando')"
     case "$DISTRO" in
     "debian") sudo apt install bc -y;;
     "rhel" | "fedora" | "rocky") sudo yum install bc -y;;
     "cachyos") sudo pacman -S --noconfirm bc ;;
-    *) echo "❌ Não foi possível instalar o pacote bc. Instale e execute novamente." && exit 1 ;;
+    *) echo "$(t '❌ Não foi possível instalar o pacote bc. Instale e execute novamente.' '❌ No se pudo instalar el paquete bc. Instálelo ejecuta este script nuevamente.')" && exit 1 ;;
     esac
 fi   
 
