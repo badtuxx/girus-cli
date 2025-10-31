@@ -484,6 +484,6 @@ data:
           - command: "cd ~/terraform-projeto && terraform workspace list | grep -q production && echo 'success' || echo 'error'"
             expectedOutput: "success"
             errorMessage: "O workspace 'production' não foi criado corretamente."
-          - command: "aws s3 ls | grep -q terraform-workspace-staging && aws s3 ls | grep -q terraform-workspace-production && echo 'success' || echo 'error'"
+          - command: "buckets=$(aws s3 ls) && grep -q \"terraform-workspace-staging\" <<< \"$buckets\" && grep -q \"terraform-workspace-production\" <<< \"$buckets\" && echo 'success' || echo 'error'"
             expectedOutput: "success"
             errorMessage: "Os buckets dos workspaces não foram criados corretamente."
