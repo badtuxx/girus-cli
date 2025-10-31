@@ -8,7 +8,7 @@ metadata:
 data:
   lab.yaml: |
     name: terraform-aws-fundamentos
-    title: "Terraform Teste: Fundamentos de Infraestrutura como Código"
+    title: "Terraform: Fundamentos de Infraestrutura como Código"
     description: "Aprenda os princípios fundamentais do Terraform, a ferramenta de infraestrutura como código (IaC) da HashiCorp. Entenda conceitos como providers, recursos, variáveis e o ciclo de vida do Terraform."
     duration: 25m
     image: "linuxtips/girus-localstack:0.1"
