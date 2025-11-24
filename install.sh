@@ -482,15 +482,24 @@ fi
 # Checa se bc está instalado para comparação numérica
 
 if command -v bc &> /dev/null; then
-    echo "$(t 'Pacote bc encontrado.' 'Paquete bc encontrado')"
+    echo "$(t '✅ Pacote bc encontrado.' '✅ Paquete bc encontrado')"
 else
     echo "$(t 'Comando bc não encontrado. Instalando:' 'Comando bc no encontrado. Instalando')"
-    case "$DISTRO" in
-    "debian") sudo apt install bc -y;;
-    "rhel" | "fedora" | "rocky") sudo yum install bc -y;;
-    "cachyos") sudo pacman -S --noconfirm bc ;;
-    *) echo "$(t '❌ Não foi possível instalar o pacote bc. Instale e execute novamente.' '❌ No se pudo instalar el paquete bc. Instálelo ejecuta este script nuevamente.')" && exit 1 ;;
-    esac
+    if [ "$OS" == "darwin" ]; then
+        if command -v brew &> /dev/null; then
+            brew install bc
+        else
+            echo "$(t '❌ Não foi possível instalar o pacote bc. Instale e execute novamente.' '❌ No se pudo instalar el paquete bc. Instálelo ejecuta este script nuevamente.')"
+            exit 1
+        fi
+    elif [ "$OS" == "linux" ]; then
+        case "$DISTRO" in
+        "debian" | "ubuntu") sudo apt-get install -qq bc >/dev/null;;
+        "rhel" | "fedora" | "rocky") sudo yum install bc -yq;;
+        "cachyos") sudo pacman -S --noconfirm bc ;;
+        *) echo "$(t '❌ Não foi possível instalar o pacote bc. Instale e execute novamente.' '❌ No se pudo instalar el paquete bc. Instálelo ejecuta este script nuevamente.')" && exit 1 ;;
+        esac
+    fi
 fi   
 
 # ETAPA 1: Verificar pré-requisitos - Docker
