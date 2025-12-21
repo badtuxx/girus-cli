@@ -369,7 +369,7 @@ func UpdateContainerImage(namespace, deployment, containerName, image string, ve
 	var stderr bytes.Buffer
 	kubectlUpdateCmd.Stderr = &stderr
 	if err := kubectlUpdateCmd.Run(); err != nil {
-		return fmt.Errorf("falha ao reiniciar deployment [%s] no namespace [%s]: %s", deployment, namespace, stderr.String())
+		return fmt.Errorf("falha ao atualizar imagem do deployment [%s] no namespace [%s]: %s", deployment, namespace, stderr.String())
 	}
 	return nil
 }
