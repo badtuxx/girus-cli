@@ -17,6 +17,7 @@ import (
 	"github.com/badtuxx/girus-cli/internal/lab"
 	"github.com/badtuxx/girus-cli/internal/repo"
 	"github.com/badtuxx/girus-cli/internal/templates"
+	"github.com/badtuxx/girus-cli/utils"
 	"github.com/fatih/color"
 	"github.com/spf13/cobra"
 )
@@ -30,6 +31,7 @@ var (
 	skipPortForward bool
 	skipBrowser     bool
 	repoIndexURL    string
+	tag             string
 )
 
 var createCmd = &cobra.Command{
@@ -871,6 +873,7 @@ func init() {
 	createClusterCmd.Flags().BoolVarP(&verboseMode, "verbose", "v", false, "Modo detalhado com output completo em vez da barra de progresso")
 	createClusterCmd.Flags().BoolVarP(&skipPortForward, "skip-port-forward", "", false, "Não perguntar sobre configurar port-forwarding")
 	createClusterCmd.Flags().BoolVarP(&skipBrowser, "skip-browser", "", false, "Não abrir o navegador automaticamente")
+	createClusterCmd.Flags().StringVar(&tag, "tag", "latest", "Define quais tags do frontend e backend serão usadas na criação do cluster")
 
 	createClusterCmd.Flags().StringVarP(&containerEngine, "container-engine", "e", "docker", "Engine de container (docker ou podman)")
 
