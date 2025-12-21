@@ -871,8 +871,8 @@ func init() {
 	// Flags para createClusterCmd
 	createClusterCmd.Flags().StringVarP(&deployFile, "file", "f", "", "Arquivo YAML para deployment do Girus (opcional)")
 	createClusterCmd.Flags().BoolVarP(&verboseMode, "verbose", "v", false, "Modo detalhado com output completo em vez da barra de progresso")
-	createClusterCmd.Flags().BoolVarP(&skipPortForward, "skip-port-forward", "", false, "Não perguntar sobre configurar port-forwarding")
-	createClusterCmd.Flags().BoolVarP(&skipBrowser, "skip-browser", "", false, "Não abrir o navegador automaticamente")
+	createClusterCmd.Flags().BoolVar(&skipPortForward, "skip-port-forward", false, "Não perguntar sobre configurar port-forwarding")
+	createClusterCmd.Flags().BoolVar(&skipBrowser, "skip-browser", false, "Não abrir o navegador automaticamente")
 	createClusterCmd.Flags().StringVar(&tag, "tag", "latest", "Define quais tags do frontend e backend serão usadas na criação do cluster")
 
 	createClusterCmd.Flags().StringVarP(&containerEngine, "container-engine", "e", "docker", "Engine de container (docker ou podman)")
