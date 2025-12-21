@@ -42,6 +42,19 @@ var createCmd = &cobra.Command{
 	},
 }
 
+func setDeploymentTag(tag string, verboseMode bool) error {
+	fmt.Println(headerColor("Sobreescrevendo imagem dos deployments"))
+
+	for _, deploy := range utils.Deployments {
+		image := fmt.Sprintf("%s:%s", deploy.DockerHubImage, tag)
+		if err := k8s.UpdateContainerImage("girus", deploy.Name, deploy.ContainerName, image, verboseMode); err != nil {
+			return err
+		}
+	}
+
+	return nil
+}
+
 var createClusterCmd = &cobra.Command{
 	Use:   "cluster",
 	Short: "Cria o cluster Girus",
@@ -700,6 +713,10 @@ Por padrão, o deployment embutido no binário é utilizado.`,
 					}
 				}
 
+				if err := setDeploymentTag(tag, verboseMode); err != nil {
+					fmt.Println(err)
+					os.Exit(1)
+				}
 				// Reiniciar o backend para carregar os templates
 				fmt.Println("\n" + headerColor(common.T("Reiniciando o backend para carregar os templates...", "Reiniciando el backend para cargar las plantillas...")))
 				restartCmd := exec.Command("kubectl", "rollout", "restart", "deployment/girus-backend", "-n", "girus")
