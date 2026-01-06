@@ -31,7 +31,8 @@ var (
 	skipPortForward bool
 	skipBrowser     bool
 	repoIndexURL    string
-	tag             string
+	frontendTag     string
+	backendTag      string
 )
 
 var createCmd = &cobra.Command{
@@ -42,17 +43,14 @@ var createCmd = &cobra.Command{
 	},
 }
 
-func setDeploymentTag(tag string, verboseMode bool) error {
-	fmt.Println(headerColor("Sobreescrevendo imagem dos deployments"))
+func setDeploymentTag(tag string, deployment utils.DeploymentMap, verboseMode bool) error {
 	if tag == "latest" {
 		return nil
 	}
 
-	for _, deploy := range utils.Deployments {
-		image := fmt.Sprintf("%s:%s", deploy.DockerHubImage, tag)
-		if err := k8s.UpdateContainerImage("girus", deploy.Name, deploy.ContainerName, image, verboseMode); err != nil {
-			return err
-		}
+	image := fmt.Sprintf("%s:%s", deployment.DockerHubImage, tag)
+	if err := k8s.UpdateContainerImage("girus", deployment.Name, deployment.ContainerName, image, verboseMode); err != nil {
+		return err
 	}
 
 	return nil
@@ -716,7 +714,15 @@ Por padrão, o deployment embutido no binário é utilizado.`,
 					}
 				}
 
-				if err := setDeploymentTag(tag, verboseMode); err != nil {
+				fmt.Println(headerColor("Sobreescrevendo imagem dos deployments..."))
+				backendDeployment := utils.Deployments["backend"]
+				if err := setDeploymentTag(backendTag, backendDeployment, verboseMode); err != nil {
+					fmt.Println(err)
+					os.Exit(1)
+				}
+
+				frontendDeployment := utils.Deployments["frontend"]
+				if err := setDeploymentTag(frontendTag, frontendDeployment, verboseMode); err != nil {
 					fmt.Println(err)
 					os.Exit(1)
 				}
@@ -893,7 +899,8 @@ func init() {
 	createClusterCmd.Flags().BoolVarP(&verboseMode, "verbose", "v", false, "Modo detalhado com output completo em vez da barra de progresso")
 	createClusterCmd.Flags().BoolVar(&skipPortForward, "skip-port-forward", false, "Não perguntar sobre configurar port-forwarding")
 	createClusterCmd.Flags().BoolVar(&skipBrowser, "skip-browser", false, "Não abrir o navegador automaticamente")
-	createClusterCmd.Flags().StringVar(&tag, "tag", "latest", "Define quais tags do frontend e backend serão usadas na criação do cluster")
+	createClusterCmd.Flags().StringVar(&frontendTag, "frontend-tag", "latest", "Define tag do frontend a ser usada na criação do cluster")
+	createClusterCmd.Flags().StringVar(&backendTag, "backend-tag", "latest", "Define tag do backend a ser usada na criação do cluster")
 
 	createClusterCmd.Flags().StringVarP(&containerEngine, "container-engine", "e", "docker", "Engine de container (docker ou podman)")
 
