@@ -44,6 +44,9 @@ var createCmd = &cobra.Command{
 
 func setDeploymentTag(tag string, verboseMode bool) error {
 	fmt.Println(headerColor("Sobreescrevendo imagem dos deployments"))
+	if tag == "latest" {
+		return nil
+	}
 
 	for _, deploy := range utils.Deployments {
 		image := fmt.Sprintf("%s:%s", deploy.DockerHubImage, tag)
