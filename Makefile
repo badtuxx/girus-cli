@@ -39,6 +39,10 @@ all: build
 build:
 	go build -v -ldflags="$(LDFLAGS)" -o $(BD)/$(BIN) $(CDR)/main.go
 
+# Executa os tests
+tests:
+	go test -v ./...
+
 # Instala o binário no sistema
 install: build
 	sudo mv $(BD)/$(BIN) $(INSTALL_DIR)/$(BIN)

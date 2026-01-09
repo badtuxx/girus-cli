@@ -12,8 +12,52 @@ import (
 
 	"github.com/badtuxx/girus-cli/internal/helpers"
 	"github.com/badtuxx/girus-cli/internal/k8s"
+	"github.com/badtuxx/girus-cli/internal/templates"
 	"github.com/schollz/progressbar/v3"
+	"gopkg.in/yaml.v3"
 )
+
+// ListAllLabs retorna uma lista com os nomes de todos os laboratórios disponíveis nos templates
+func ListAllLabs() ([]string, error) {
+	manifests, err := templates.ListManifests()
+	if err != nil {
+		return nil, err
+	}
+
+	var labNames []string
+	for _, manifestName := range manifests {
+		content, err := templates.GetManifest(manifestName)
+		if err != nil {
+			continue
+		}
+
+		// Parse ConfigMap
+		var cm struct {
+			Data map[string]string `yaml:"data"`
+		}
+		if err := yaml.Unmarshal(content, &cm); err != nil {
+			continue
+		}
+
+		labYaml, ok := cm.Data["lab.yaml"]
+		if !ok {
+			continue
+		}
+
+		// Parse lab.yaml
+		var lab struct {
+			Name string `yaml:"name"`
+		}
+		if err := yaml.Unmarshal([]byte(labYaml), &lab); err != nil {
+			continue
+		}
+
+		if lab.Name != "" {
+			labNames = append(labNames, lab.Name)
+		}
+	}
+	return labNames, nil
+}
 
 // addLabFromFile adiciona um novo template de laboratório a partir de um arquivo
 func AddLabFromFile(labFile string, verboseMode bool) {

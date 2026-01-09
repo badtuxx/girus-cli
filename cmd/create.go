@@ -781,6 +781,23 @@ Por padrão, o deployment embutido no binário é utilizado.`,
 			fmt.Println("kubectl port-forward -n girus svc/girus-frontend 8000:80 --address 0.0.0.0")
 		}
 
+		// Inicializar o arquivo de progresso com todos os laboratórios como "not-started"
+		fmt.Println("\n" + headerColor("Inicializando arquivo de progresso..."))
+		labNames, err := lab.ListAllLabs()
+		if err != nil {
+			fmt.Printf("%s Erro ao listar laboratórios: %v\n", yellow("AVISO:"), err)
+		} else {
+			progress := common.NewProgress("")
+			for _, name := range labNames {
+				progress.AddLab(name, "not-started")
+			}
+			if err := progress.SaveProgressToFile(); err != nil {
+				fmt.Printf("%s Erro ao salvar arquivo de progresso: %v\n", yellow("AVISO:"), err)
+			} else {
+				fmt.Printf("%s Arquivo de progresso inicializado com %d laboratórios.\n", green("SUCESSO:"), len(labNames))
+			}
+		}
+
 		// Exibir mensagem de conclusão
 		fmt.Println("\n" + strings.Repeat("─", 60))
 		fmt.Println(headerColor(common.T("GIRUS PRONTO PARA USO!", "GIRUS LISTO PARA USARSE!")))
