@@ -65,8 +65,8 @@ data:
           - command: "docker network ls | grep -q bridge && echo 'ok'"
             expectedOutput: "ok"
             errorMessage: "La red 'bridge' por defecto no fue encontrada. Verifica la instalación de Docker."
-          - command: "docker network ls | wc -l"
-            expectedExpression: "> 3"
+          - command: "[[ $(docker network ls -q | wc -l) -eq 3  ]]; echo $?"
+            expectedOutput: "0"
             errorMessage: "Docker debe crear al menos 3 redes por defecto."
 
       - name: "Red Bridge Por Defecto"
