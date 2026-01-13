@@ -118,8 +118,8 @@ data:
           - command: "docker network inspect bridge -f '{{.Driver}}'"
             expectedOutput: "bridge"
             errorMessage: "A rede padrão 'bridge' não foi encontrada ou não é do tipo bridge."
-          - command: "ip addr show docker0 2>/dev/null | grep -q 'inet' && echo 'ok' || echo 'Sem interface docker0'"
-            expectedOutput: "ok"
+          - command: "[[ -d /sys/class/net/docker0 ]]; echo $?"
+            expectedOutput: "0"
             errorMessage: "A interface docker0 não foi encontrada no host. Verifique a configuração do Docker."
 
       - name: "Rede Host"
