@@ -114,6 +114,33 @@ GIRUS CLI utiliza versionamiento dinámico basado en etiquetas git. Puedes verif
 3. Actualiza `index.yaml` con la información del nuevo lab.
 4. Envía un Pull Request.
 
+## Contribución y comunidad
+
+GIRUS es un proyecto de código abierto que depende de las contribuciones de la comunidad para crecer. Hay varias maneras de contribuir:
+
+### Desarrollo
+- Corrección de bugs y mejoras del código fuente
+- Implementación de nuevas funcionalidades
+- Optimización del rendimiento
+- Pruebas y garantía de calidad
+
+### Creación de contenido
+- Desarrollo de nuevos templates de laboratorio
+- Traducción de contenidos a otros idiomas
+- Elaboración de tutoriales y documentación
+
+### Divulgación
+- Compartiendo el proyecto en las redes sociales
+- Presentaciones en eventos y congresos
+- Artículos sobre el uso y beneficios de la plataforma
+
+### Proceso de contribución
+1. Fork el repositorio en [GitHub](https://github.com/badtuxx/girus)
+2. Crea una branch para tu feature (`git checkout -b feature/nueva-funcionalidad`)
+3. Realice sus cambios y commit (`git commit -m 'Añade nueva funcionalidad'`)
+4. Push a la branch (`git push origin feature/nueva-funcionalidad`)
+5. Crear un Pull Request
+
 ## Soporte y Contacto
 
 * **GitHub Issues**: [github.com/badtuxx/girus-cli/issues](https://github.com/badtuxx/girus-cli/issues)
