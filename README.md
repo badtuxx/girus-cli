@@ -414,7 +414,7 @@ tasks:
 
 * **GitHub Issues**: [github.com/badtuxx/girus-cli/issues](https://github.com/badtuxx/girus-cli/issues)
 * **GitHub Discussions**: [github.com/badtuxx/girus-cli/discussions](https://github.com/badtuxx/girus-cli/discussions)
-* **Discord da Comunidade**: [discord.gg/linuxtips](https://discord.gg/linuxtips)
+* **Discord da Comunidade**: [discord.gg/linuxtips](https://discord.com/invite/BMy8xYpRsf)
 
 ## Licença
 
