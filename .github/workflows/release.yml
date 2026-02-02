@@ -41,7 +41,7 @@ jobs:
 
       - uses: sigstore/cosign-installer@v3.8.1
 
-      - uses: anchore/sbom-action/download-syft@v0.20.10 # v0.20.10
+      - uses: anchore/sbom-action/download-syft@v0.22.1 # v0.20.10
 
       - name: Set tag output
         id: tag
