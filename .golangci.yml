@@ -1,16 +1,24 @@
-run:
-  timeout: 5m
-  skip-dirs:
-    - third_party$
-    - builtin$
-    - examples$
+version: "2"
 
 linters:
   disable:
     - errcheck
+  exclusions:
+    generated: lax
+    presets:
+      - comments
+      - common-false-positives
+      - legacy
+      - std-error-handling
+    paths:
+      - third_party$
+      - builtin$
+      - examples$
 
-issues:
-  exclude-dirs:
-    - third_party$
-    - builtin$
-    - examples$
+formatters:
+  exclusions:
+    generated: lax
+    paths:
+      - third_party$
+      - builtin$
+      - examples$
