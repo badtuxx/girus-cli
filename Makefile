@@ -62,6 +62,14 @@ release:
 		GOOS=$$OS GOARCH=$$ARCH go build -ldflags "$(LDFLAGS)" -v -o $$OUT $(CDR)/main.go || exit 1; \
 	done
 
+# Executa o teste end-to-end: sobe um cluster Kind real, implanta o Girus,
+# valida backend, frontend e templates, e remove o cluster no final.
+# Requer Docker, Kind e kubectl. Leva de 5 a 10 minutos na primeira execução.
+#   E2E_KEEP=1 make e2e    mantém o cluster de pé para inspeção
+#   E2E_FORCE=1 make e2e   remove um cluster girus preexistente antes
+e2e:
+	@./scripts/e2e.sh
+
 # Executa o binário localmente usando o arquivo de configuração
 run-local: build
 	CONFIG_FILE=$(CONFIG_PATH) ./$(BD)/$(BIN)
@@ -100,4 +108,4 @@ deps:
 	go mod graph
 
 # Declara alvos que não representam arquivos
-.PHONY: all build install clean release run-local check-updates upgrade-all upgrade tidy deps
+.PHONY: all build install clean release e2e run-local check-updates upgrade-all upgrade tidy deps
