@@ -14,7 +14,7 @@ ARG VERSION=dev
 RUN CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build -o girus -ldflags="-X 'github.com/badtuxx/girus-cli/internal/common.Version=${VERSION}'" ./main.go
 
 # Use a minimal alpine image for the final container
-FROM alpine:3.22
+FROM alpine:3.23
 
 # Install necessary packages
 RUN apk add --no-cache ca-certificates curl bash docker-cli
