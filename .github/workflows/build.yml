@@ -54,7 +54,7 @@ jobs:
           # essa variavel de ambiente sera usada para injetar no ldflags do goreleaser
           echo "GOVERSION=$(go version | cut -d' ' -f3)" >> $GITHUB_ENV
 
-      - uses: sigstore/cosign-installer@v3.8.1 # v3.8.1
+      - uses: sigstore/cosign-installer@v4.1.2 # v3.8.1
 
       - uses: anchore/sbom-action/download-syft@v0.24.2 # v0.20.10
 
