@@ -39,35 +39,38 @@ builds:
       - -X github.com/badtuxx/girus-cli/internal/common.GoArch={{ .Arch }}
       - -X github.com/badtuxx/girus-cli/internal/common.GoVersion={{ .Env.GOVERSION }}
 
+# Assinatura keyless com cosign.
+#
+# O cosign v3 (instalado pelo sigstore/cosign-installer v4) passou a usar o
+# formato de bundle por padrao: --output-signature e --output-certificate sao
+# ignorados e --bundle e obrigatorio. Sem ele, o cosign recebe um caminho vazio
+# e falha com "create bundle file: open : no such file or directory".
+#
+# O bundle .sigstore.json substitui o par .sig + .pem: um unico arquivo carrega
+# assinatura e certificado. Verificacao:
+#
+#   cosign verify-blob --bundle <artefato>.sigstore.json <artefato>
 signs:
   # Keyless
   - id: girus-cli
-    signature: "${artifact}.sig"
-    certificate: "${artifact}.pem"
+    signature: "${artifact}.sigstore.json"
     cmd: cosign
     args:
       [
         "sign-blob",
         "--yes",
-        "--output-signature",
-        "${artifact}.sig",
-        "--output-certificate",
-        "${artifact}.pem",
+        "--bundle=${signature}",
         "${artifact}",
       ]
     artifacts: binary
   - id: checksum
-    signature: "${artifact}-keyless.sig"
-    certificate: "${artifact}.pem"
+    signature: "${artifact}.sigstore.json"
     cmd: cosign
     args:
       [
         "sign-blob",
         "--yes",
-        "--output-signature",
-        "${artifact}-keyless.sig",
-        "--output-certificate",
-        "${artifact}.pem",
+        "--bundle=${signature}",
         "${artifact}",
       ]
     artifacts: checksum
