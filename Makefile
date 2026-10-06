@@ -7,7 +7,11 @@ BD=dist
 CDR=.
 CONFIG_PATH=manifest/config.yaml
 # Variáveis para versionamento
-VERSION    := 0.5.0
+# Versão derivada das tags git (mesma regra do CI): a tag exata quando o commit
+# está tagueado, senão <última tag>-dev.<commit>. Pode ser sobrescrita com VERSION=x.y.z
+EXACT_TAG  := $(shell git describe --tags --exact-match 2>/dev/null)
+LATEST_TAG := $(shell git describe --tags --abbrev=0 2>/dev/null || echo 0.0.0)
+VERSION    ?= $(patsubst v%,%,$(if $(EXACT_TAG),$(EXACT_TAG),$(LATEST_TAG)-dev.$(shell git rev-parse --short HEAD)))
 DATE       := $(shell date -u +%Y-%m-%dT%H:%M:%SZ)
 BUILT_BY   := $(shell whoami)
 COMMITID   := $(shell git rev-parse --short HEAD)

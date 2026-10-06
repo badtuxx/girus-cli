@@ -108,13 +108,31 @@ if [ "$ARCH" == "unknown" ]; then
 fi
 
 # Configurações e variáveis
-GIRUS_VERSION="v0.5.0"
+# Por padrão instala o último release publicado. Para fixar uma versão:
+#   curl -sSL girus.linuxtips.io | GIRUS_VERSION=v0.5.0 bash
+GIRUS_REPO_URL="https://github.com/badtuxx/girus-cli"
+GIRUS_VERSION="${GIRUS_VERSION:-latest}"
+
+if [ "$GIRUS_VERSION" == "latest" ]; then
+    # Descobre a tag do último release pelo redirect de /releases/latest (sem API, sem rate limit)
+    LATEST_TAG=$(curl -fsSLI -o /dev/null -w '%{url_effective}' "$GIRUS_REPO_URL/releases/latest" 2>/dev/null | sed 's#.*/tag/##')
+    if [[ "$LATEST_TAG" == v* ]]; then
+        GIRUS_VERSION="$LATEST_TAG"
+        RELEASE_PATH="download/$GIRUS_VERSION"
+    else
+        # Não foi possível resolver a tag: o GitHub redireciona latest/download para o último release
+        RELEASE_PATH="latest/download"
+    fi
+else
+    [[ "$GIRUS_VERSION" == v* ]] || GIRUS_VERSION="v$GIRUS_VERSION"
+    RELEASE_PATH="download/$GIRUS_VERSION"
+fi
 
 # Definir URL com base no sistema operacional e arquitetura
 if [ "$OS" == "windows" ]; then
-    BINARY_URL="https://github.com/badtuxx/girus-cli/releases/download/$GIRUS_VERSION/girus-cli-$OS-$ARCH.exe"
+    BINARY_URL="$GIRUS_REPO_URL/releases/$RELEASE_PATH/girus-cli-$OS-$ARCH.exe"
 else
-    BINARY_URL="https://github.com/badtuxx/girus-cli/releases/download/$GIRUS_VERSION/girus-cli-$OS-$ARCH"
+    BINARY_URL="$GIRUS_REPO_URL/releases/$RELEASE_PATH/girus-cli-$OS-$ARCH"
 fi
 
 echo "$(t 'URL de download: $BINARY_URL' 'URL de descarga: $BINARY_URL')"
