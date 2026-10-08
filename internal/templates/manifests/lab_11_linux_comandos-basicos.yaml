@@ -209,7 +209,7 @@ data:
           - "**Executando Processos em Segundo Plano**"
           - "No Linux, podemos facilmente executar processos em background (segundo plano) usando o operador `&`:"
           - "`sleep 300 &`"
-          - "Este comando inicia um processo que simplesmente "dorme" por 300 segundos (5 minutos), mas o faz em segundo plano, liberando o terminal para outros comandos."
+          - "Este comando inicia um processo que simplesmente \"dorme\" por 300 segundos (5 minutos), mas o faz em segundo plano, liberando o terminal para outros comandos."
           - "O sistema exibirá o PID do processo em background, algo como `[1] 12345`."
           - "**Verificando Processos em Background**"
           - "Para ver os jobs (tarefas) em execução em segundo plano no seu terminal atual:"

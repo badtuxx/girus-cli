@@ -226,6 +226,8 @@ Aqui estão os comandos disponíveis:
 
 ### Compilação e Instalação
 
+> **Requisito:** Go **1.26** ou superior. A versão mínima é declarada no `go.mod` e vem das dependências do `k8s.io` (0.37.0), que exigem Go 1.26. Os workflows de CI e o `Dockerfile` acompanham essa mesma versão.
+
 * **`make build`** (ou simplesmente `make`): Compila o binário `girus` para o seu sistema operacional atual e o coloca no diretório `dist/`. Este é o comando padrão se você executar `make` sem argumentos.
 * **`make install`**: Compila o binário (se ainda não estiver compilado) e o move para `/usr/local/bin/girus`, tornando-o acessível globalmente no seu sistema. Requer permissões de superusuário (`sudo`).
 * **`make clean`**: Remove o diretório `dist/` e todos os arquivos de build gerados.
@@ -250,6 +252,69 @@ Para verificar a versão atual do binário, execute:
 ```
 
 Os workflows CI/CD do projeto também utilizam este mecanismo de versionamento dinâmico para as builds do Docker e artefatos de release, garantindo consistência em todo o processo de build.
+
+> **Importante:** prefira sempre `make build` a um `go build` sem flags. O `make` injeta a versão via `ldflags`; sem isso o binário reporta `dev`, e o `girus create cluster` conclui que há atualização disponível e abre um prompt de auto-atualização antes de criar o cluster.
+
+### Testes
+
+O projeto tem duas camadas de teste, com propósitos diferentes.
+
+#### Testes unitários
+
+```bash
+go test ./...                                              # suíte completa
+go test -run TestListAndGetManifests ./internal/templates  # um teste específico
+```
+
+São rápidos e não dependem de Docker. Hoje cobrem apenas a validação dos manifests embutidos (`internal/templates`) — todo o código que conversa com o cluster (`internal/k8s`) não é exercitado por eles. Na prática, `go test ./...` passa mesmo que o `girus create cluster` esteja quebrado.
+
+#### Teste end-to-end
+
+```bash
+make e2e
+```
+
+Sobe um cluster Kind de verdade, implanta o Girus, valida o resultado e remove o cluster no final. É o único teste que exercita o caminho completo do CLI.
+
+**Pré-requisitos:** Docker em execução, `kind`, `kubectl`, `make` e `go`. O script verifica todos antes de começar e aborta com uma mensagem clara se faltar algum.
+
+O que ele valida, em sete etapas:
+
+1. Pré-requisitos instalados e daemon do Docker respondendo
+2. Compilação do binário com a versão correta
+3. `girus create cluster` conclui sem erro
+4. Deployments `girus-backend` e `girus-frontend` ficam disponíveis
+5. ConfigMaps de laboratório aplicados **e** efetivamente carregados pelo backend
+6. `girus list labs` e `girus status` respondem
+7. Resultado consolidado
+
+A etapa 5 merece atenção: ela compara quantos ConfigMaps foram aplicados com quantos templates o backend conseguiu desserializar. Divergência de schema falha em silêncio — o ConfigMap existe no cluster, o backend descarta o lab, e nada aparece na interface. O teste transforma isso em um aviso explícito.
+
+**Variáveis de ambiente:**
+
+| Variável | Efeito |
+| --- | --- |
+| `E2E_KEEP=1` | Mantém o cluster de pé ao final, para inspeção |
+| `E2E_FORCE=1` | Remove um cluster `girus` preexistente antes de começar |
+
+Por segurança, o teste **recusa** rodar se já existir um cluster chamado `girus` (para não destruir um ambiente em uso) e remove o cluster que criou mesmo em caso de falha.
+
+Saída esperada de um ciclo limpo:
+
+```
+[5/7] Validando os templates de laboratorio
+  OK: 26 ConfigMaps de laboratorio aplicados
+  OK: backend carregou 26 templates
+[6/7] Exercitando os comandos do CLI
+  OK: 'girus list labs' respondeu
+  OK: 'girus status' respondeu
+
+E2E PASSOU -- 26 laboratorios aplicados, 26 carregados pelo backend
+```
+
+O ciclo completo leva cerca de 2 minutos com as imagens em cache, e de 5 a 10 minutos na primeira execução.
+
+> **Recomendado antes de publicar uma release.** A suíte unitária não cobre o `internal/k8s`, então o `make e2e` é o que de fato comprova que o binário a ser publicado cria um cluster funcional.
 
 ### Gerenciamento de Dependências (Go Modules)
 

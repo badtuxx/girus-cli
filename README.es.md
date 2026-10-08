@@ -94,6 +94,8 @@ Clona el repositorio y ejecuta `make <comando>`.
 
 ### Compilación y Instalación
 
+> **Requisito:** Go **1.26** o superior. La versión mínima está declarada en `go.mod` y proviene de las dependencias de `k8s.io` (0.37.0), que exigen Go 1.26. Los workflows de CI y el `Dockerfile` usan esa misma versión.
+
 * **`make build`** (o simplemente `make`): Compila el binario `girus` para tu sistema operativo actual y lo coloca en el directorio `dist/`.
 * **`make install`**: Compila el binario (si aún no está compilado) y lo mueve a `/usr/local/bin/girus`, requiriendo permisos de superusuario (`sudo`).
 * **`make clean`**: Elimina el directorio `dist/` y todos los archivos generados de build.
@@ -106,6 +108,77 @@ GIRUS CLI utiliza versionamiento dinámico basado en etiquetas git. Puedes verif
 ```bash
 ./girus version
 ```
+
+> **Importante:** usa siempre `make build` en lugar de un `go build` sin flags. El `make` inyecta la versión mediante `ldflags`; sin eso el binario reporta `dev`, y `girus create cluster` concluye que hay una actualización disponible y abre un prompt de auto-actualización antes de crear el cluster.
+
+### Pruebas
+
+El proyecto tiene dos capas de pruebas, con propósitos distintos.
+
+#### Pruebas unitarias
+
+```bash
+go test ./...                                              # suite completa
+go test -run TestListAndGetManifests ./internal/templates  # una prueba específica
+```
+
+Son rápidas y no dependen de Docker. Hoy cubren solo la validación de los manifiestos embebidos (`internal/templates`) — todo el código que habla con el cluster (`internal/k8s`) no es ejercitado por ellas. En la práctica, `go test ./...` pasa incluso si `girus create cluster` está roto.
+
+#### Prueba end-to-end
+
+```bash
+make e2e
+```
+
+Levanta un cluster Kind real, despliega GIRUS, valida el resultado y elimina el cluster al final. Es la única prueba que ejercita el camino completo de la CLI.
+
+**Prerrequisitos:** Docker en ejecución, `kind`, `kubectl`, `make` y `go`. El script los verifica todos antes de empezar y aborta con un mensaje claro si falta alguno.
+
+Lo que valida, en siete etapas:
+
+1. Prerrequisitos instalados y daemon de Docker respondiendo
+2. Compilación del binario con la versión correcta
+3. `girus create cluster` termina sin error
+4. Los deployments `girus-backend` y `girus-frontend` quedan disponibles
+5. ConfigMaps de laboratorio aplicados **y** efectivamente cargados por el backend
+6. `girus list labs` y `girus status` responden
+7. Resultado consolidado
+
+La etapa 5 merece atención: compara cuántos ConfigMaps se aplicaron con cuántas plantillas logró deserializar el backend. Una divergencia de esquema falla en silencio — el ConfigMap existe en el cluster, el backend descarta el laboratorio, y nada aparece en la interfaz. La prueba convierte eso en un aviso explícito.
+
+**Variables de entorno:**
+
+| Variable | Efecto |
+| --- | --- |
+| `E2E_KEEP=1` | Mantiene el cluster levantado al final, para inspección |
+| `E2E_FORCE=1` | Elimina un cluster `girus` preexistente antes de empezar |
+
+Por seguridad, la prueba **se niega** a ejecutarse si ya existe un cluster llamado `girus` (para no destruir un entorno en uso) y elimina el cluster que creó incluso si falla.
+
+Salida esperada de un ciclo limpio:
+
+```
+[5/7] Validando os templates de laboratorio
+  OK: 26 ConfigMaps de laboratorio aplicados
+  OK: backend carregou 26 templates
+[6/7] Exercitando os comandos do CLI
+  OK: 'girus list labs' respondeu
+  OK: 'girus status' respondeu
+
+E2E PASSOU -- 26 laboratorios aplicados, 26 carregados pelo backend
+```
+
+El ciclo completo tarda unos 2 minutos con las imágenes en caché, y entre 5 y 10 minutos en la primera ejecución.
+
+> **Recomendado antes de publicar una release.** La suite unitaria no cubre `internal/k8s`, así que `make e2e` es lo que realmente comprueba que el binario a publicar crea un cluster funcional.
+
+### Gestión de Dependencias (Go Modules)
+
+* **`make check-updates`**: Verifica si hay actualizaciones disponibles para las dependencias Go del proyecto.
+* **`make upgrade-all`**: Actualiza todas las dependencias Go a sus versiones más recientes y ejecuta `go mod tidy`.
+* **`make upgrade MODULE=<nombre/del/modulo>`**: Actualiza una dependencia Go específica (ej.: `make upgrade MODULE=github.com/spf13/cobra`).
+* **`make tidy`**: Ejecuta `go mod tidy` para limpiar `go.mod` y `go.sum`.
+* **`make deps`**: Muestra el grafo de dependencias del proyecto.
 
 ## Contribuyendo con Labs
 
