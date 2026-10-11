@@ -28,6 +28,7 @@ import (
 var (
 	green = color.New(color.FgGreen).SprintFunc()
 	bold  = color.New(color.Bold).SprintFunc()
+	k     = "kubectl"
 )
 
 // KubernetesClient wraper do cliente Kubernetes
@@ -355,6 +356,23 @@ func (k *KubernetesClient) CreateDeployment(ctx context.Context, namespace, name
 		return fmt.Errorf("falha ao criar o deploy %s no namespace %s: %w", name, namespace, err)
 	}
 	fmt.Printf("%s: Deploy %s criado com sucesso!\n", green("SUCESSO:"), bold(name))
+	return nil
+}
+
+// Atualiza imagem de um container específico dentro de um deployment.
+func UpdateContainerImage(namespace, deployment, containerName, image string, verboseMode bool) error {
+	updateArgs := []string{"set", "image", deployment, fmt.Sprintf("%s=%s", containerName, image), "-n", namespace}
+	commandString := fmt.Sprint(strings.Join(updateArgs, " "))
+	if verboseMode {
+		fmt.Printf("Executando comando %s %s\n", k, commandString)
+	}
+
+	kubectlUpdateCmd := exec.Command(k, updateArgs...)
+	var stderr bytes.Buffer
+	kubectlUpdateCmd.Stderr = &stderr
+	if err := kubectlUpdateCmd.Run(); err != nil {
+		return fmt.Errorf("falha ao atualizar imagem do deployment [%s] no namespace [%s]: %s", deployment, namespace, stderr.String())
+	}
 	return nil
 }
 

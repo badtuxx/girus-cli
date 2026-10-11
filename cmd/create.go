@@ -17,6 +17,7 @@ import (
 	"github.com/badtuxx/girus-cli/internal/lab"
 	"github.com/badtuxx/girus-cli/internal/repo"
 	"github.com/badtuxx/girus-cli/internal/templates"
+	"github.com/badtuxx/girus-cli/utils"
 	"github.com/fatih/color"
 	"github.com/spf13/cobra"
 )
@@ -30,6 +31,8 @@ var (
 	skipPortForward bool
 	skipBrowser     bool
 	repoIndexURL    string
+	frontendTag     string
+	backendTag      string
 )
 
 var createCmd = &cobra.Command{
@@ -38,6 +41,19 @@ var createCmd = &cobra.Command{
 	Run: func(cmd *cobra.Command, args []string) {
 		cmd.Help()
 	},
+}
+
+func setDeploymentTag(tag string, deployment utils.DeploymentMap, verboseMode bool) error {
+	if tag == "latest" {
+		return nil
+	}
+
+	image := fmt.Sprintf("%s:%s", deployment.DockerHubImage, tag)
+	if err := k8s.UpdateContainerImage("girus", deployment.Name, deployment.ContainerName, image, verboseMode); err != nil {
+		return err
+	}
+
+	return nil
 }
 
 var createClusterCmd = &cobra.Command{
@@ -698,6 +714,18 @@ Por padrão, o deployment embutido no binário é utilizado.`,
 					}
 				}
 
+				fmt.Println(headerColor("Sobreescrevendo imagem dos deployments..."))
+				backendDeployment := utils.Deployments["backend"]
+				if err := setDeploymentTag(backendTag, backendDeployment, verboseMode); err != nil {
+					fmt.Println(err)
+					os.Exit(1)
+				}
+
+				frontendDeployment := utils.Deployments["frontend"]
+				if err := setDeploymentTag(frontendTag, frontendDeployment, verboseMode); err != nil {
+					fmt.Println(err)
+					os.Exit(1)
+				}
 				// Reiniciar o backend para carregar os templates
 				fmt.Println("\n" + headerColor(common.T("Reiniciando o backend para carregar os templates...", "Reiniciando el backend para cargar las plantillas...")))
 				restartCmd := exec.Command("kubectl", "rollout", "restart", "deployment/girus-backend", "-n", "girus")
@@ -869,8 +897,10 @@ func init() {
 	// Flags para createClusterCmd
 	createClusterCmd.Flags().StringVarP(&deployFile, "file", "f", "", "Arquivo YAML para deployment do Girus (opcional)")
 	createClusterCmd.Flags().BoolVarP(&verboseMode, "verbose", "v", false, "Modo detalhado com output completo em vez da barra de progresso")
-	createClusterCmd.Flags().BoolVarP(&skipPortForward, "skip-port-forward", "", false, "Não perguntar sobre configurar port-forwarding")
-	createClusterCmd.Flags().BoolVarP(&skipBrowser, "skip-browser", "", false, "Não abrir o navegador automaticamente")
+	createClusterCmd.Flags().BoolVar(&skipPortForward, "skip-port-forward", false, "Não perguntar sobre configurar port-forwarding")
+	createClusterCmd.Flags().BoolVar(&skipBrowser, "skip-browser", false, "Não abrir o navegador automaticamente")
+	createClusterCmd.Flags().StringVar(&frontendTag, "frontend-tag", "latest", "Define tag do frontend a ser usada na criação do cluster")
+	createClusterCmd.Flags().StringVar(&backendTag, "backend-tag", "latest", "Define tag do backend a ser usada na criação do cluster")
 
 	createClusterCmd.Flags().StringVarP(&containerEngine, "container-engine", "e", "docker", "Engine de container (docker ou podman)")
 
