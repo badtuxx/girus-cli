@@ -409,6 +409,67 @@ tasks:
         expectedOutput: "saída esperada"
         errorMessage: "Mensagem de erro personalizada"
 ```
+## Integração com Sistemas de Aprendizado
+
+O GIRUS foi criado pela LINUXtips para melhorar a experiência de aprendizado dos alunos, mas não é restrito aos alunos da LINUXtips, você pode usar o GIRUS em qualquer lugar que você precise de um ambiente prático para aprender ou testar novas tecnologias, por exemplo:
+
+1. **Complemento para Cursos Online**:
+   - Ambiente prático para reforçar conteúdo teórico
+   - Validação automatizada de exercícios
+   - Experiência hands-on sem necessidade de infraestrutura adicional
+
+2. **Treinamentos Corporativos**:
+   - Ambientes padronizados para todos os participantes
+   - Fácil distribuição de exercícios práticos
+   - Redução de custos com infraestrutura
+
+3. **Preparação para Certificações**:
+   - Simulação de ambientes similares aos exames
+   - Tarefas baseadas em syllabus oficial
+   - Feedback imediato sobre o progresso
+
+## Contribuição e Comunidade
+
+O GIRUS é um projeto open-source que depende da contribuição da comunidade para crescer. Existem várias formas de contribuir:
+
+### Desenvolvimento
+- Correção de bugs e melhorias no código-fonte
+- Implementação de novos recursos
+- Otimização de performance
+- Testes e garantia de qualidade
+
+### Criação de Conteúdo
+- Desenvolvimento de novos templates de laboratórios
+- Tradução do conteúdo para outros idiomas
+- Elaboração de tutoriais e documentação
+
+### Divulgação
+- Compartilhamento do projeto nas redes sociais
+- Apresentações em eventos e conferências
+- Artigos sobre o uso e benefícios da plataforma
+
+### Processo de Contribuição
+1. Fork o repositório em [GitHub](https://github.com/badtuxx/girus)
+2. Crie uma branch para sua feature (`git checkout -b feature/nova-funcionalidade`)
+3. Faça suas alterações e commit (`git commit -m 'Adiciona nova funcionalidade'`)
+4. Push para a branch (`git push origin feature/nova-funcionalidade`)
+5. Abra um Pull Request
+
+## Roadmap de Desenvolvimento
+
+O projeto GIRUS tem um plano de desenvolvimento contínuo com os seguintes objetivos:
+
+### Curto Prazo (3-6 meses)
+- Expansão da biblioteca de laboratórios com o Girus Hub
+- Melhorias na interface do usuário
+- Suporte a múltiplos idiomas
+- Integração com sistemas de badges/conquistas
+
+### Médio Prazo (6-12 meses)
+- Implementação de recursos colaborativos
+- Sistema de competições e desafios
+- Métricas avançadas de progresso
+- Suporte a plugins de extensão
 
 ## Suporte e Contato
 
